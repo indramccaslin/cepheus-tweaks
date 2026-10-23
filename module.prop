@@ -1,5 +1,6 @@
 id=cepheus-tweaks
 name=Cepheus Tweaks
+author=GANÉS
 version=v1.0.0
 versionCode=10000
 description=Kunci CPU & GPU ke performa maksimum otomatis saat game dibuka. Touch response boost, network latency boost, DDR/memory boost, governor & frekuensi per cluster, thermal unlock, bypass charging. WebUI baru: dashboard, daftar game, mode, governor, dan toggle optimasi. Xiaomi Mi 9 (cepheus/sm8150).
