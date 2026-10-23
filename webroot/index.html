@@ -66,6 +66,13 @@
   .opt .b b{display:block;font-size:14px;font-variant-numeric:tabular-nums}
   .opt .b small{color:var(--dim);font-size:11px}
   .opt.sel .b b{color:var(--acc)}
+  /* governor sections */
+  .govsec{margin-top:16px}
+  .govsec:first-child{margin-top:8px}
+  .govhead{display:flex;align-items:baseline;gap:8px;margin:0 2px}
+  .govhead b{font-size:12px;color:#c7d2e4;text-transform:uppercase;letter-spacing:.6px}
+  .govhead small{color:var(--dim);font-size:11px}
+  .govsec .gl{margin-top:4px}
   /* collapsible card header */
   .cardhead{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
   .cardhead h2{margin:0;flex:1}
@@ -95,18 +102,113 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
   .hidden{display:none!important}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  /* ===== v3.7 visual refresh ===== */
+  :root{--acc:#4f8cff;--acc2:#9b6bff;--acc3:#22d3ee;--ok:#34e3a4;--err:#ff5c7a}
+  html{scroll-behavior:smooth}
+  body{
+    max-width:760px;padding:18px 14px 76px;
+    background:
+      radial-gradient(1000px 620px at 110% -10%,rgba(155,107,255,.22),transparent 60%),
+      radial-gradient(800px 520px at -15% 5%,rgba(34,211,238,.14),transparent 55%),
+      radial-gradient(700px 600px at 50% 110%,rgba(79,140,255,.12),transparent 60%),
+      #070a10;
+  }
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:42px 42px;mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 70%)}
+  body::after{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+    background:conic-gradient(from 180deg at 70% 20%,rgba(79,140,255,.08),transparent 30%,rgba(155,107,255,.08),transparent 60%);
+    animation:spin 26s linear infinite;filter:blur(60px)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hero{position:relative;overflow:hidden;border-radius:26px;padding:18px 18px 16px;margin-bottom:16px;
+    background:linear-gradient(150deg,rgba(79,140,255,.16),rgba(155,107,255,.07) 45%,rgba(20,26,36,.75));
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:0 30px 80px -40px rgba(79,140,255,.65),inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter:blur(14px)}
+  .hero .glow{position:absolute;border-radius:50%;filter:blur(30px);opacity:.55;pointer-events:none;animation:float 7s ease-in-out infinite}
+  .hero .g1{width:180px;height:180px;right:-40px;top:-70px;background:#7c5cff}
+  .hero .g2{width:150px;height:150px;left:-50px;bottom:-80px;background:#22d3ee;animation-delay:-3s}
+  @keyframes float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,12px,0) scale(1.08)}}
+  .hero .top{position:relative;z-index:1;margin:0}
+  .titlewrap{min-width:0}
+  .top h1{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+  .top h1 span{background:linear-gradient(90deg,#7dd3fc,#a78bfa 60%,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .top .sub{display:flex;align-items:center;gap:6px;color:#9aa7bd;font-size:11.5px;margin-top:4px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(52,227,164,.12)}
+  .logo{width:50px;height:50px;border-radius:16px;background:linear-gradient(135deg,#4f8cff,#9b6bff 60%,#22d3ee);
+    box-shadow:0 14px 30px -12px rgba(79,140,255,.9),inset 0 1px 0 rgba(255,255,255,.35)}
+  .logo svg{width:28px;height:28px}
+  .badge{font-weight:700;color:#dbe6ff;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);padding:6px 11px}
+  .pills{position:relative;z-index:1;display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.2px;
+    border:1px solid rgba(255,255,255,.1);background:rgba(8,12,20,.45);color:#c6d3ea;padding:6px 10px;border-radius:999px}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+  .pill.mode{color:#fff;background:linear-gradient(135deg,rgba(79,140,255,.9),rgba(155,107,255,.9));border-color:transparent}
+  .pill.mode::before{background:#fff}
+  .card{position:relative;background:linear-gradient(180deg,rgba(20,26,36,.88),rgba(15,20,30,.92));
+    border:1px solid rgba(255,255,255,.075);border-radius:22px;padding:17px;
+    box-shadow:0 24px 50px -34px #000,inset 0 1px 0 rgba(255,255,255,.045);
+    backdrop-filter:blur(12px);transition:border-color .25s,transform .25s}
+  .card:hover{border-color:rgba(255,255,255,.13)}
+  .card::before{content:"";position:absolute;left:18px;right:18px;top:-1px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(124,92,255,.7),rgba(34,211,238,.55),transparent)}
+  .card h2{font-size:12.5px;letter-spacing:.9px;color:#dbe6f8}
+  .card h2 svg{width:17px;height:17px}
+  .cardhead h2 svg{flex:0 0 auto}
+  .hint{color:#8b98ad;font-size:12px}
+  input{background:rgba(7,11,18,.75);border-color:rgba(255,255,255,.08);border-radius:14px;padding:12px 13px;transition:.2s}
+  input:focus{border-color:rgba(79,140,255,.7);box-shadow:0 0 0 4px rgba(79,140,255,.12)}
+  button{border-radius:14px;background:linear-gradient(135deg,#4f8cff,#8b5cf6);box-shadow:0 12px 28px -14px rgba(79,140,255,.8);transition:.18s}
+  button:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  button:active{transform:scale(.985)}
+  button.ghost{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.1)}
+  .mode{background:linear-gradient(180deg,rgba(27,34,47,.95),rgba(19,25,35,.95));border-radius:18px;overflow:hidden}
+  .mode.sel{background:linear-gradient(160deg,rgba(79,140,255,.18),rgba(124,92,255,.1));box-shadow:0 0 0 1.5px rgba(79,140,255,.9),0 18px 44px -22px rgba(79,140,255,.75)}
+  .mode[data-m="gaming"].sel{background:linear-gradient(160deg,rgba(255,106,61,.18),rgba(255,61,110,.1));box-shadow:0 0 0 1.5px rgba(255,106,61,.9),0 18px 44px -22px rgba(255,61,110,.7)}
+  .opt{border-radius:12px;padding:11px 10px;transition:background .18s}
+  .opt:hover{background:rgba(255,255,255,.03)}
+  .opt.sel{background:rgba(79,140,255,.07)}
+  .opt.sel .r{border-color:var(--acc);box-shadow:0 0 0 4px rgba(79,140,255,.12)}
+  .ci{width:32px;height:32px;border-radius:10px;background:rgba(79,140,255,.1);border-color:rgba(79,140,255,.22)}
+  .cur{background:rgba(79,140,255,.12);border-color:rgba(79,140,255,.35);color:#9dc0ff}
+  .switch{position:relative;width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);flex:0 0 auto;transition:.22s}
+  .switch::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#8a96a8;transition:.22s}
+  .switch.on{background:linear-gradient(135deg,#4f8cff,#9b6bff);border-color:transparent;box-shadow:0 0 22px -4px rgba(79,140,255,.8)}
+  .switch.on::after{left:21px;background:#fff}
+  .feat{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:13px 2px;color:var(--txt);box-shadow:none;cursor:pointer}
+  .feat:last-child{border-bottom:0}
+  .feat:hover{background:rgba(255,255,255,.025);transform:none;filter:none}
+  .feat .fic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    background:rgba(79,140,255,.1);border:1px solid rgba(79,140,255,.18)}
+  .feat .fic svg{width:19px;height:19px;color:#8fb8ff}
+  .feat .fb{flex:1;min-width:0}
+  .feat .fb b{display:block;font-size:13.5px}
+  .feat .fb small{display:block;color:var(--dim);font-size:11px;line-height:1.35;margin-top:2px}
+  .feat.on .fic{background:linear-gradient(135deg,rgba(79,140,255,.25),rgba(155,107,255,.18));border-color:rgba(124,92,255,.35)}
+  .feat.on .fb b{color:#fff}
+  .foot{opacity:.7;letter-spacing:.3px}
+  .toast{border-radius:14px;box-shadow:0 16px 40px -16px #000}
 </style>
 </head>
 <body>
 
-<div class="top">
-  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8Z"/></svg></div>
-  <div>
-    <h1>Cepheus Tweaks</h1>
-    <div class="sub">Xiaomi Mi 9 &bull; SM8150</div>
+<header class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="top">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8Z"/></svg></div>
+    <div class="titlewrap">
+      <h1>Cepheus <span>Tweaks</span></h1>
+      <div class="sub"><span class="dot"></span> Xiaomi Mi 9 &bull; SM8150</div>
+    </div>
+    <div class="badge" id="verBadge">v1.0.0</div>
   </div>
-  <div class="badge" id="verBadge">v3.5.0</div>
-</div>
+  <div class="pills">
+    <span class="pill mode" id="pillMode">Gaming</span>
+    <span class="pill" id="pillCpu">CPU &mdash;</span>
+    <span class="pill" id="pillBoost">Boost &mdash;</span>
+  </div>
+</header>
 
 <div id="noksu" class="warn hidden" data-i18n="noksu"></div>
 
@@ -129,6 +231,29 @@
 
 <div class="hint" style="margin:2px 4px 10px" id="cpuHint"></div>
 <div id="cpucards"></div>
+
+<div class="card" id="govcard">
+  <div class="cardhead" onclick="toggleGov()">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="govTitle"></span></h2>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="coll" id="govbody">
+    <div class="hint" style="margin-top:10px" id="govHint"></div>
+    <div id="govlist"></div>
+  </div>
+</div>
+
+<div class="card" id="boostcard">
+  <div class="cardhead" onclick="toggleBoost()">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8Z"/></svg> <span data-i18n="boostTitle"></span></h2>
+    <span class="count" id="boostcount">0</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="coll" id="boostbody">
+    <div class="hint" style="margin-top:10px" data-i18n="boostHint"></div>
+    <div id="featlist"></div>
+  </div>
+</div>
 
 <div class="card" id="gamecard">
   <div class="cardhead" onclick="toggleGames()">
@@ -214,7 +339,13 @@ function fileConf(){ return MODDIR + "/tweak.conf"; }
 
 /* ===================== ikon ===================== */
 var IC = {
-  chip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2.4"/><path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3M2.5 9.5h3M2.5 14.5h3M18.5 9.5h3M18.5 14.5h3"/></svg>'
+  chip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2.4"/><path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3M2.5 9.5h3M2.5 14.5h3M18.5 9.5h3M18.5 14.5h3"/></svg>',
+  touch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 12V5a1.5 1.5 0 0 1 3 0v7M14 12V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1.5a5 5 0 0 1-4-2L3 14.5a1.6 1.6 0 0 1 2.4-2L8 15"/></svg>',
+  net:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>',
+  ddr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
+  gpu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M7 10h.01M17 10h.01M8 14h8"/></svg>',
+  thermal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13.5V5a2 2 0 1 1 4 0v8.5a4.5 4.5 0 1 1-4 0Z"/><path d="M12 9v6"/></svg>',
+  plug:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/></svg>'
 };
 
 /* ===================== bahasa (i18n) ===================== */
@@ -236,6 +367,49 @@ var T = {
   langHint:{id:'Bahasa tampilan antarmuka WebUI.',en:'Language used across the WebUI interface.'},
   langIdDesc:{id:'Teks antarmuka berbahasa Indonesia.',en:'Interface text in Indonesian.'},
   langEnDesc:{id:'Teks antarmuka berbahasa Inggris.',en:'Interface text in English.'},
+  govTitle:{id:'Governor',en:'Governor'},
+  govHintGlobal:{id:'Mode Global hanya memakai governor CPU idle (batas frekuensi tetap berlaku). Pilihan governor game dan GPU baru dipakai saat Mode Gaming.',
+                 en:'Global mode only uses the idle CPU governor (frequency caps still apply). Game and GPU governor choices are used in Gaming mode.'},
+  govHintGaming:{id:'Governor menentukan cara kernel menaikkan dan menurunkan frekuensi. Governor game dipakai selama game terdeteksi; governor idle dipakai di luar game.',
+                 en:'The governor controls how the kernel raises and lowers frequencies. The game governor is used while a game is detected; the idle governor is used outside games.'},
+  govCpuGame:{id:'CPU • saat game',en:'CPU • gaming'},
+  govCpuGameDesc:{id:'Dipakai selama game terdeteksi.',en:'Used while a game is detected.'},
+  govCpuIdle:{id:'CPU • saat idle',en:'CPU • idle'},
+  govCpuIdleDesc:{id:'Dipakai saat tidak ada game.',en:'Used when no game is running.'},
+  govGpuGame:{id:'GPU • saat game',en:'GPU • gaming'},
+  govGpuGameDesc:{id:'Dipakai saat profil game aktif.',en:'Used while the gaming profile is active.'},
+  govGpuIdle:{id:'GPU • saat idle',en:'GPU • idle'},
+  govGpuIdleDesc:{id:'Dipakai di luar game.',en:'Used outside games.'},
+  govPerfDesc:{id:'Frekuensi maksimum terus — paling responsif, paling panas.',en:'Pinned to maximum frequency — most responsive, hottest.'},
+  govSchedDesc:{id:'Adaptif berbasis scheduler — seimbang.',en:'Scheduler-driven adaptive — balanced.'},
+  govPowerDesc:{id:'Frekuensi rendah — hemat daya.',en:'Low frequency — power saving.'},
+  govUserDesc:{id:'Frekuensi diatur dari userspace.',en:'Frequency is controlled from userspace.'},
+  govOnDemandDesc:{id:'Naik cepat saat beban tinggi.',en:'Ramps up quickly under load.'},
+  govOtherDesc:{id:'Governor bawaan kernel.',en:'Kernel-provided governor.'},
+  govToast:{id:'Governor disimpan, diterapkan maks ~5 detik',en:'Governor saved, applied within ~5 s'},
+  boostTitle:{id:'Optimasi Game',en:'Game Boost'},
+  boostHint:{id:'Aktifkan atau matikan optimasi yang dipakai saat game terdeteksi. Semua perubahan langsung diterapkan tanpa reboot.',
+             en:'Enable or disable the optimizations used while a game is detected. Every change is applied instantly without a reboot.'},
+  featTouch:{id:'Touch Response',en:'Touch Response'},
+  featTouchDesc:{id:'Matikan filter grip, sarung tangan, dan mode charger saat game agar sentuhan lebih responsif.',
+                 en:'Disable grip, glove and charger filters while gaming for a more responsive touch.'},
+  featNet:{id:'Network Boost',en:'Network Boost'},
+  featNetDesc:{id:'Turunkan latency TCP saat game: autocorking off, busy polling, dan notsent_lowat kecil.',
+               en:'Lower TCP latency while gaming: autocorking off, busy polling, and a small notsent_lowat.'},
+  featDdr:{id:'DDR Boost',en:'DDR Boost'},
+  featDdrDesc:{id:'Naikkan floor bandwidth DDR/LLCC/GPU bus ke maksimum selama game agar frame pacing stabil.',
+               en:'Raise the DDR/LLCC/GPU bus bandwidth floor to maximum while gaming for steadier frame pacing.'},
+  featGpu:{id:'GPU Max Lock',en:'GPU Max Lock'},
+  featGpuDesc:{id:'Kunci GPU di clock tertinggi selama game (tidak naik-turun).',
+               en:'Lock the GPU at its highest clock while gaming (no clock bouncing).'},
+  featThermal:{id:'Thermal Unlock',en:'Thermal Unlock'},
+  featThermalDesc:{id:'Hentikan thermal daemon userspace selama game; proteksi darurat kernel tetap aktif.',
+                   en:'Pause userspace thermal daemons while gaming; kernel emergency protection stays active.'},
+  featBypass:{id:'Bypass Charging',en:'Bypass Charging'},
+  featBypassDesc:{id:'Saat game sambil dicas, baterai tidak diisi sehingga HP lebih dingin.',
+                  en:'While gaming on the charger the battery is not charged, keeping the phone cooler.'},
+  featOnCount:{id:'aktif',en:'active'},
+  systemTag:{id:'sistem',en:'system'},
   gameTitle:{id:'Daftar Game',en:'Game List'},
   gameHint:{id:'Aplikasi yang terdaftar akan memicu profil performa otomatis saat berjalan di latar depan. Ketika tidak ada game aktif, sistem kembali ke profil hemat daya.',
             en:'Registered apps trigger the performance profile automatically when brought to the foreground. When no game is running, the system returns to the power-saving profile.'},
@@ -274,10 +448,10 @@ function applyI18n(){
   var p = document.querySelectorAll('[data-i18n-ph]');
   for (var j=0;j<p.length;j++){ p[j].placeholder = t(p[j].getAttribute('data-i18n-ph')); }
 }
-function refreshTexts(){ applyI18n(); setModeUI(); renderCpu(); renderGames(); renderQuick(); renderApps(); renderLangs(); }
+function refreshTexts(){ applyI18n(); setModeUI(); renderCpu(); renderGov(); renderFeatures(); renderGames(); renderQuick(); renderApps(); renderLangs(); renderHero(); }
 
 /* ===================== state ===================== */
-var state = { games:[], apps:null, mode:'gaming', cpu:{} };
+var state = { games:[], apps:null, mode:'gaming', cpu:{}, gov:{}, govOpts:{cpu:[],gpu:[]}, features:{} };
 
 /* ===================== mode (global / gaming) ===================== */
 function setModeUI(){
@@ -290,6 +464,10 @@ function setModeUI(){
   if (mh) mh.textContent = state.mode==='global' ? t('modeHintGlobal') : t('modeHintGaming');
   var ch = document.getElementById('cpuHint');
   if (ch) ch.textContent = state.mode==='global' ? t('cpuHintGlobal') : t('cpuHintGaming');
+  var gh = document.getElementById('govHint');
+  if (gh) gh.textContent = state.mode==='global' ? t('govHintGlobal') : t('govHintGaming');
+  document.body.dataset.mode = state.mode;
+  renderHero();
 }
 function pickMode(m){
   if (m!=='global' && m!=='gaming') return;
@@ -434,12 +612,132 @@ function renderCpu(){
       '<div class="coll'+(open?' open':'')+'" id="coll_'+c.key+'"><ul class="gl">'+opts+'</ul></div>'+
     '</div>';
   }).join('');
+  renderHero();
 }
 function pickCluster(ci, v){
   var c = CPU_CLUSTERS[ci]; if (!c) return;
   state.cpu[c.key] = v; renderCpu();
   var pairs = {}; pairs[c.key] = v;
   confSetMany(pairs).then(function(){ return reloadWorker(); });
+}
+
+/* ===================== governor ===================== */
+function govDesc(name){
+  if (!name) return '';
+  switch(name){
+    case 'performance': return t('govPerfDesc');
+    case 'powersave': return t('govPowerDesc');
+    case 'userspace': return t('govUserDesc');
+    case 'schedutil': return t('govSchedDesc');
+    case 'ondemand': case 'interactive': case 'conservative': return t('govOnDemandDesc');
+    case 'msm-adreno-tz': return t('govSchedDesc');
+    case 'simple_ondemand': case 'cdspl3': case 'compute': case 'mem_latency': case 'bw_hwmon':
+    case 'vidc-ar50-llcc': case 'vidc-ar50-ddr': case 'msm-vidc-llcc': case 'msm-vidc-ddr': case 'gpubw_mon': case 'bw_vbif':
+      return t('govOtherDesc');
+    default: return t('govOtherDesc');
+  }
+}
+async function loadGov(){
+  state.govOpts = {cpu:[],gpu:[]};
+  try{
+    var s = await sh("cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors 2>/dev/null");
+    state.govOpts.cpu = String(s).trim().split(/\s+/).filter(function(x){return x;});
+  }catch(e){}
+  if (!state.govOpts.cpu.length) state.govOpts.cpu = ['performance','schedutil','powersave','userspace'];
+  try{
+    var g = await sh("cat /sys/class/kgsl/kgsl-3d0/devfreq/available_governors 2>/dev/null");
+    state.govOpts.gpu = String(g).trim().split(/\s+/).filter(function(x){return x;});
+  }catch(e){}
+  if (!state.govOpts.gpu.length) state.govOpts.gpu = ['performance','msm-adreno-tz','powersave','userspace'];
+}
+function toggleGov(){
+  var card = document.getElementById('govcard'), body = document.getElementById('govbody');
+  var open = card.classList.toggle('open');
+  if (body) body.classList.toggle('open', open);
+  lsSet('cg_gov_open', open ? '1' : '0');
+}
+function renderGov(){
+  var host = document.getElementById('govlist'); if (!host) return;
+  var secs = [
+    {key:'CPU_GAME_GOV', title:t('govCpuGame'), desc:t('govCpuGameDesc'), opts:state.govOpts.cpu},
+    {key:'CPU_IDLE_GOV', title:t('govCpuIdle'), desc:t('govCpuIdleDesc'), opts:state.govOpts.cpu},
+    {key:'GPU_GAME_GOV', title:t('govGpuGame'), desc:t('govGpuGameDesc'), opts:state.govOpts.gpu},
+    {key:'GPU_IDLE_GOV', title:t('govGpuIdle'), desc:t('govGpuIdleDesc'), opts:state.govOpts.gpu}
+  ];
+  host.innerHTML = secs.map(function(sec){
+    var sel = state.gov[sec.key] || '';
+    var items = sec.opts.map(function(v){
+      var s = (String(v) === String(sel)) ? ' sel' : '';
+      return '<li class="opt'+s+'" onclick="pickGov(\''+sec.key+'\',\''+v+'\')">'+
+        '<span class="r"></span>'+
+        '<span class="b"><b>'+esc(v)+'</b><small>'+esc(govDesc(v))+'</small></span></li>';
+    }).join('');
+    return '<div class="govsec"><div class="govhead"><b>'+esc(sec.title)+'</b><small>'+esc(sec.desc)+'</small></div><ul class="gl">'+items+'</ul></div>';
+  }).join('');
+}
+function pickGov(key,v){
+  if (!key) return;
+  state.gov[key] = v; renderGov();
+  var pairs = {}; pairs[key] = v;
+  confSetMany(pairs).then(function(){ return reloadWorker(); }).then(function(){ toast(t('govToast')); });
+}
+
+/* ===================== optimasi game (toggle) ===================== */
+var FEATURES = [
+  {key:'TOUCH_BOOST', dflt:'true', icon:'touch', titleKey:'featTouch', descKey:'featTouchDesc'},
+  {key:'NET_GAME_BOOST', dflt:'true', icon:'net', titleKey:'featNet', descKey:'featNetDesc'},
+  {key:'DDR_BOOST', dflt:'true', icon:'ddr', titleKey:'featDdr', descKey:'featDdrDesc'},
+  {key:'GPU_GAME_LOCK', dflt:'true', icon:'gpu', titleKey:'featGpu', descKey:'featGpuDesc'},
+  {key:'THERMAL_UNLOCK', dflt:'true', icon:'thermal', titleKey:'featThermal', descKey:'featThermalDesc'},
+  {key:'GP_BYPASS_CHARGE', dflt:'true', icon:'plug', titleKey:'featBypass', descKey:'featBypassDesc'}
+];
+function featOn(k){ return String(state.features[k])==='true'; }
+function renderFeatures(){
+  var host = document.getElementById('featlist'); if (!host) return;
+  host.innerHTML = FEATURES.map(function(f){
+    var on = featOn(f.key);
+    return '<button type="button" class="feat'+(on?' on':'')+'" onclick="toggleFeature(\''+f.key+'\')">'+
+      '<span class="fic">'+(IC[f.icon]||IC.chip)+'</span>'+
+      '<span class="fb"><b>'+esc(t(f.titleKey))+'</b><small>'+esc(t(f.descKey))+'</small></span>'+
+      '<span class="switch'+(on?' on':'')+'"></span></button>';
+  }).join('');
+  var c = document.getElementById('boostcount');
+  if (c) c.textContent = FEATURES.filter(function(f){ return featOn(f.key); }).length + '/' + FEATURES.length;
+  renderHero();
+}
+function toggleFeature(key){
+  var f = null;
+  for (var i=0;i<FEATURES.length;i++){ if (FEATURES[i].key===key){ f=FEATURES[i]; break; } }
+  if (!f) return;
+  state.features[key] = featOn(key) ? 'false' : 'true';
+  renderFeatures();
+  var pairs = {}; pairs[key] = state.features[key];
+  confSetMany(pairs).then(function(){ return reloadWorker(); });
+}
+function toggleBoost(){
+  var card = document.getElementById('boostcard'), body = document.getElementById('boostbody');
+  var open = card.classList.toggle('open');
+  if (body) body.classList.toggle('open', open);
+  lsSet('cg_boost_open', open ? '1' : '0');
+}
+function fmtCap(v){
+  var n = Number(v);
+  if (!n) return '—';
+  return (n/1000000).toFixed(2).replace(/\.?0+$/,'') + 'G';
+}
+function renderHero(){
+  var pm = document.getElementById('pillMode');
+  if (pm) pm.textContent = state.mode==='global' ? 'Global Mode' : 'Gaming Mode';
+  var pc = document.getElementById('pillCpu');
+  if (pc){
+    var caps = [state.cpu.LITTLE_MAX, state.cpu.MID_MAX, state.cpu.PRIME_MAX];
+    pc.textContent = caps[0] ? ('CPU ' + caps.map(fmtCap).join(' / ')) : 'CPU —';
+  }
+  var pb = document.getElementById('pillBoost');
+  if (pb){
+    var n = FEATURES.filter(function(f){ return featOn(f.key); }).length;
+    pb.textContent = 'Boost ' + n + '/' + FEATURES.length;
+  }
 }
 
 /* ===================== app picker ===================== */
@@ -485,7 +783,10 @@ async function loadUserApps(){
 async function loadSysApps(){
   var a = fromKsu("system");
   for (var i = 0; i < 4 && !a.length; i++){ await wait(300); a = fromKsu("system"); }
-  return a;
+  if (a.length) return a;
+  var s = fromKsu("all");
+  if (s.length) return s;
+  return parsePkgs(await sh("pm list packages -s 2>/dev/null"));
 }
 async function loadApps(force){
   if (state.apps && !force){ renderApps(); return; }
@@ -525,7 +826,7 @@ function renderApps(){
     var ini = String(a.n||a.p).slice(0,1).toUpperCase();
     return '<div class="app" onclick="pick(\''+a.p+'\')">'+
       '<div class="ico">'+esc(ini)+'</div>'+
-      '<div class="n"><b>'+esc(a.n)+'</b><small>'+esc(a.p)+(a.u?'':' • '+t('showsys'))+'</small></div></div>';
+      '<div class="n"><b>'+esc(a.n)+'</b><small>'+esc(a.p)+(a.u?'':' &bull; '+esc(t('systemTag')))+'</small></div></div>';
   }).join('') || '<div style="color:var(--dim);padding:10px">'+t('noneApps')+'</div>';
 }
 function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){ el.classList.remove('show'); }, 1900); }
@@ -540,7 +841,16 @@ async function loadAll(){
   state.cpu = {};
   await loadFreqs();
   CPU_CLUSTERS.forEach(function(c){ state.cpu[c.key] = confGet(txt, c.key, c.dflt); });
-  setModeUI(); renderCpu(); renderLangs();
+  state.gov = {};
+  ['CPU_GAME_GOV','CPU_IDLE_GOV','GPU_GAME_GOV','GPU_IDLE_GOV'].forEach(function(k){
+    var d = (k.indexOf('GPU')===0) ? 'performance' : (k.indexOf('IDLE')>=0 ? 'schedutil' : 'performance');
+    if (k==='GPU_IDLE_GOV') d='msm-adreno-tz';
+    state.gov[k] = confGet(txt, k, d);
+  });
+  await loadGov();
+  state.features = {};
+  FEATURES.forEach(function(f){ state.features[f.key] = confGet(txt, f.key, f.dflt); });
+  setModeUI(); renderCpu(); renderGov(); renderFeatures(); renderLangs(); renderHero();
 }
 async function boot(){
   applyI18n();
@@ -552,6 +862,8 @@ async function boot(){
   renderGames();
   if (lsGet('cg_games_open')==='1'){ document.getElementById('gamecard').classList.add('open'); document.getElementById('gamebody').classList.add('open'); }
   if (lsGet('cg_set_open')==='1'){ document.getElementById('setcard').classList.add('open'); document.getElementById('setbody').classList.add('open'); }
+  if (lsGet('cg_gov_open')==='1'){ document.getElementById('govcard').classList.add('open'); document.getElementById('govbody').classList.add('open'); }
+  if (lsGet('cg_boost_open')==='1'){ document.getElementById('boostcard').classList.add('open'); document.getElementById('boostbody').classList.add('open'); }
   await loadAll();
 }
 boot();

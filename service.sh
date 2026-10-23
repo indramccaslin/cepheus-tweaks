@@ -1,7 +1,7 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (service.sh) v3.5.0
-# Berdiri sendiri untuk KernelSU-Next (tidak butuh Encore).
+# Cepheus Tweaks (service.sh) v1.0.0
+# Berdiri sendiri untuk KernelSU-Next (tanpa daemon tambahan).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
 #   CPU   : governor -> performance (pin ke freq max)
@@ -71,7 +71,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v3.5.0) boot#$c"
+	log "invoked (v1.0.0) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -82,7 +82,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v3.5.0)"
+	log "started (v1.0.0)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0
@@ -90,9 +90,8 @@ CPUFREQ=/sys/devices/system/cpu/cpufreq
 STUNE=/dev/stune/top-app
 THERMAL_MSG=/sys/class/thermal/thermal_message
 GAMELIST="$MODDIR/gamelist.txt"
-ENCORE_LIST=/data/adb/.config/encore/gamelist.json
-ENCORE_INFO=/data/adb/.config/encore/gameinfo
 TZ_LIST="$MODDIR/.thermal_list"
+DDR_LIST="$MODDIR/.ddr_orig"
 FTS=/sys/devices/platform/soc/c80000.i2c/i2c-2/2-0049
 MSMPERF=/sys/module/msm_performance/parameters
 
@@ -100,18 +99,39 @@ MSMPERF=/sys/module/msm_performance/parameters
 # tulis hanya jika node writable
 wr() { [ -w "$1" ] && { echo "$2" > "$1" 2>/dev/null; return 0; }; return 1; }
 
+# valid_gov <nama> <daftar governor dipisah spasi>
+valid_gov() {
+	[ -n "$1" ] || return 1
+	case " $2 " in *" $1 "*) return 0 ;; esac
+	return 1
+}
+
+# buang nilai governor yang tidak didukung kernel (mis. conf diedit manual)
+sanitize_governors() {
+	local avail
+	avail=$(cat "$CPUFREQ/policy0/scaling_available_governors" 2>/dev/null)
+	if [ -n "$avail" ]; then
+		valid_gov "$CPU_GAME_GOV" "$avail" || CPU_GAME_GOV=performance
+		valid_gov "$CPU_IDLE_GOV" "$avail" || CPU_IDLE_GOV=schedutil
+	fi
+	avail=$(cat "$G/devfreq/available_governors" 2>/dev/null)
+	if [ -n "$avail" ]; then
+		valid_gov "$GPU_GAME_GOV" "$avail" || GPU_GAME_GOV=performance
+		valid_gov "$GPU_IDLE_GOV" "$avail" || GPU_IDLE_GOV=msm-adreno-tz
+	fi
+}
+
 fg_pkg() {
 	dumpsys window 2>/dev/null \
 		| sed -n 's/.*mCurrentFocus=[^ ]* u[0-9]* \([a-zA-Z0-9_.]*\)\/.*/\1/p' \
 		| head -n1
 }
 
-# app foreground termasuk daftar game? (daftar sendiri + opsional Encore)
+# app foreground termasuk daftar game?
 in_gamelist() {
 	local pkg=$1
 	[ -n "$pkg" ] || return 1
 	grep -qxF "$pkg" "$GAMELIST" 2>/dev/null && return 0
-	[ -r "$ENCORE_LIST" ] && grep -q "\"$pkg\"" "$ENCORE_LIST" 2>/dev/null && return 0
 	return 1
 }
 
@@ -119,13 +139,8 @@ STATIC_GAME=0
 game_active() {
 	# mode statis: profil game dipakai terus
 	[ "$STATIC_GAME" = "1" ] && return 0
-	local p fg
-	# sinyal 1: status game dari Encore (kalau masih terpasang)
-	if [ -r "$ENCORE_INFO" ]; then
-		p=$(head -n1 "$ENCORE_INFO" 2>/dev/null | awk '{print $1}')
-		[ -n "$p" ] && [ "$p" != "NULL" ] && return 0
-	fi
-	# sinyal 2: app di foreground termasuk daftar game
+	local fg
+	# app di foreground termasuk daftar game?
 	fg=$(fg_pkg)
 	in_gamelist "$fg" && return 0
 	return 1
@@ -193,6 +208,12 @@ load_config() {
 	LMH_TRIP_GAME=$(read_opt LMH_TRIP_GAME 95000)
 	THERMAL_UNLOCK=$(read_opt THERMAL_UNLOCK true)
 	TOUCH_GAME=$(read_opt TOUCH_GAME true)
+	TOUCH_BOOST=$(read_opt TOUCH_BOOST true)
+	TOUCH_GRIP_ENABLE=$(read_opt TOUCH_GRIP_ENABLE 0)
+	TOUCH_GRIP_AREA=$(read_opt TOUCH_GRIP_AREA 0)
+
+	# optimasi DDR/memory bandwidth saat game
+	DDR_BOOST=$(read_opt DDR_BOOST true)
 
 	IO_SCHED=$(read_opt IO_SCHED deadline)
 	IO_READAHEAD_KB=$(read_opt IO_READAHEAD_KB 2048)
@@ -212,6 +233,14 @@ load_config() {
 	NET_BACKLOG=$(read_opt NET_TCP_SYN_BACKLOG 1024)
 	NET_TCP_RMEM=$(read_raw NET_TCP_RMEM "4096 87380 6291456")
 	NET_TCP_WMEM=$(read_raw NET_TCP_WMEM "4096 16384 6291456")
+	# tuning latensi tambahan saat game (dipulihkan saat idle)
+	NET_GAME_BOOST=$(read_opt NET_GAME_BOOST true)
+	NET_NOTSOL_LOWAT=$(read_opt NET_NOTSOL_LOWAT 16384)
+	NET_BUSY_POLL=$(read_opt NET_BUSY_POLL 50)
+	NET_BUSY_READ=$(read_opt NET_BUSY_READ 50)
+	NET_AUTOCORKING=$(read_opt NET_AUTOCORKING 0)
+	NET_SLOW_START=$(read_opt NET_SLOW_START_AFTER_IDLE 0)
+	NET_NO_METRICS=$(read_opt NET_NO_METRICS_SAVE 1)
 
 	KERNEL_PERF=$(read_opt KERNEL_PERF_CPU_TIME 25)
 	INOT_INST=$(read_opt INOTIFY_MAX_USER_INSTANCES 512)
@@ -223,6 +252,7 @@ load_config() {
 	[ "$GP_DYN" != "true" ] && STATIC_GAME=1
 }
 load_config
+sanitize_governors
 
 # ---------------- simpan nilai asli (saat boot = stok) ----------------
 ORIG_GOV0=$(cat "$CPUFREQ/policy0/scaling_governor" 2>/dev/null)
@@ -240,6 +270,8 @@ USB_ON=/sys/class/power_supply/usb/present
 [ -r "$FTS/glove_mode" ] && ORIG_GLOVE=$(cat "$FTS/glove_mode" 2>/dev/null)
 [ -r "$FTS/cover_mode" ] && ORIG_COVER=$(cat "$FTS/cover_mode" 2>/dev/null)
 [ -r "$FTS/charger_mode" ] && ORIG_CHARGER=$(cat "$FTS/charger_mode" 2>/dev/null)
+[ -r "$FTS/grip_enable" ] && ORIG_GRIP_ENABLE=$(cat "$FTS/grip_enable" 2>/dev/null)
+[ -r "$FTS/grip_area" ] && ORIG_GRIP_AREA=$(cat "$FTS/grip_area" 2>/dev/null)
 ORIG_SCHED_LAT=$(cat /proc/sys/kernel/sched_latency_ns 2>/dev/null)
 ORIG_SCHED_MIN=$(cat /proc/sys/kernel/sched_min_granularity_ns 2>/dev/null)
 ORIG_SCHED_WAKE=$(cat /proc/sys/kernel/sched_wakeup_granularity_ns 2>/dev/null)
@@ -379,6 +411,42 @@ gpu_unlock_min() {
 	[ -n "$ORIG_GPU_MAX_FREQ" ] && [ -w "$G/devfreq/max_freq" ] && echo "$ORIG_GPU_MAX_FREQ" > "$G/devfreq/max_freq" 2>/dev/null
 }
 
+# ---------------- DDR / memory bandwidth ----------------
+# Simpan nilai asli node devfreq DDR/LLCC/gpubw agar bisa dipulihkan saat idle.
+build_ddr_list() {
+	: > "$DDR_LIST"
+	local n p mn mx gv
+	for n in cpu-cpu-llcc-bw cpu-llcc-ddr-bw gpubw cpu0-llcc-ddr-lat cpu4-llcc-ddr-lat cpu4-cpu-ddr-latfloor; do
+		p="/sys/class/devfreq/soc:qcom,$n"
+		[ -d "$p" ] || continue
+		mn=$(cat "$p/min_freq" 2>/dev/null)
+		mx=$(cat "$p/max_freq" 2>/dev/null)
+		gv=$(cat "$p/governor" 2>/dev/null)
+		[ -n "$mx" ] || continue
+		echo "$n|$mn|$mx|$gv" >> "$DDR_LIST"
+	done
+}
+
+# game: naikkan floor bandwidth/latency DDR ke batas maksimum node.
+# idle: pulihkan min/max/governor asli (urutan min dulu agar max tidak ter-clamp).
+ddr_set() {
+	[ -s "$DDR_LIST" ] || return 0
+	local n omin omax ogov p mx
+	while IFS='|' read -r n omin omax ogov; do
+		[ -n "$n" ] || continue
+		p="/sys/class/devfreq/soc:qcom,$n"
+		[ -d "$p" ] || continue
+		if [ "$1" = "game" ] && [ "$DDR_BOOST" = "true" ]; then
+			mx=$(cat "$p/max_freq" 2>/dev/null)
+			[ -n "$mx" ] && [ -w "$p/min_freq" ] && echo "$mx" > "$p/min_freq" 2>/dev/null
+		else
+			[ -n "$omin" ] && [ -w "$p/min_freq" ] && echo "$omin" > "$p/min_freq" 2>/dev/null
+			[ -n "$omax" ] && [ -w "$p/max_freq" ] && echo "$omax" > "$p/max_freq" 2>/dev/null
+			[ -n "$ogov" ] && [ -w "$p/governor" ] && echo "$ogov" > "$p/governor" 2>/dev/null
+		fi
+	done < "$DDR_LIST"
+}
+
 # ---------------- bypass charging ----------------
 # on  : charging_enabled=0 -> HP ditenagai adaptor, baterai TIDAK diisi
 #       (status jadi "Not charging", current_now ~0) -> panas jauh lebih rendah
@@ -396,11 +464,10 @@ bypass_charge() {
 }
 
 # ---------------- touch (driver FTS) ----------------
-# matikan mode sarung-tangan/cover/isi-daya yang menurunkan sensitivitas saat game
+# response boost: matikan filter glove/cover/charger + grip suppression saat game.
 touch_set() {
-	[ "$TOUCH_GAME" = "true" ] || return 0
 	[ -d "$FTS" ] || return 0
-	if [ "$1" = "game" ]; then
+	if [ "$1" = "game" ] && [ "$TOUCH_GAME" = "true" ]; then
 		wr "$FTS/glove_mode" 0
 		wr "$FTS/cover_mode" 0
 		wr "$FTS/charger_mode" 0
@@ -408,6 +475,35 @@ touch_set() {
 		[ -n "$ORIG_GLOVE" ] && wr "$FTS/glove_mode" "$ORIG_GLOVE"
 		[ -n "$ORIG_COVER" ] && wr "$FTS/cover_mode" "$ORIG_COVER"
 		[ -n "$ORIG_CHARGER" ] && wr "$FTS/charger_mode" "$ORIG_CHARGER"
+	fi
+	if [ "$1" = "game" ] && [ "$TOUCH_BOOST" = "true" ]; then
+		wr "$FTS/grip_enable" "$TOUCH_GRIP_ENABLE"
+		wr "$FTS/grip_area" "$TOUCH_GRIP_AREA"
+	else
+		[ -n "$ORIG_GRIP_ENABLE" ] && wr "$FTS/grip_enable" "$ORIG_GRIP_ENABLE"
+		[ -n "$ORIG_GRIP_AREA" ] && wr "$FTS/grip_area" "$ORIG_GRIP_AREA"
+	fi
+}
+
+# ---------------- network latency (game saja) ----------------
+# Tuning tambahan yang hanya aktif saat game; nilai asli (hasil apply_static)
+# dipulihkan saat idle sehingga tidak membebani pemakaian harian.
+net_game_set() {
+	[ "$EN_NET" = "true" ] || return 0
+	if [ "$1" = "game" ] && [ "$NET_GAME_BOOST" = "true" ]; then
+		wr /proc/sys/net/ipv4/tcp_notsent_lowat "$NET_NOTSOL_LOWAT"
+		wr /proc/sys/net/ipv4/tcp_autocorking "$NET_AUTOCORKING"
+		wr /proc/sys/net/ipv4/tcp_slow_start_after_idle "$NET_SLOW_START"
+		wr /proc/sys/net/ipv4/tcp_no_metrics_save "$NET_NO_METRICS"
+		wr /proc/sys/net/core/busy_poll "$NET_BUSY_POLL"
+		wr /proc/sys/net/core/busy_read "$NET_BUSY_READ"
+	else
+		[ -n "$ORIG_NET_NOTSOL" ] && wr /proc/sys/net/ipv4/tcp_notsent_lowat "$ORIG_NET_NOTSOL"
+		[ -n "$ORIG_NET_AUTOCORK" ] && wr /proc/sys/net/ipv4/tcp_autocorking "$ORIG_NET_AUTOCORK"
+		[ -n "$ORIG_NET_SSAI" ] && wr /proc/sys/net/ipv4/tcp_slow_start_after_idle "$ORIG_NET_SSAI"
+		[ -n "$ORIG_NET_METRICS" ] && wr /proc/sys/net/ipv4/tcp_no_metrics_save "$ORIG_NET_METRICS"
+		[ -n "$ORIG_NET_BUSY_POLL" ] && wr /proc/sys/net/core/busy_poll "$ORIG_NET_BUSY_POLL"
+		[ -n "$ORIG_NET_BUSY_READ" ] && wr /proc/sys/net/core/busy_read "$ORIG_NET_BUSY_READ"
 	fi
 }
 
@@ -505,21 +601,26 @@ thermal_unlock_off() {
 }
 # refresh cepat saat sudah di profil game (melawan thermal-engine bila respawn)
 enforce_game() {
-	[ -w "$G/thermal_pwrlevel" ] && echo 0 > "$G/thermal_pwrlevel" 2>/dev/null
-	pgrep -x mi_thermald >/dev/null 2>&1 && stop mi_thermald 2>/dev/null
-	pgrep -x thermal-engine >/dev/null 2>&1 && stop vendor.thermal-engine 2>/dev/null
+	if [ "$THERMAL_UNLOCK" = "true" ]; then
+		[ -w "$G/thermal_pwrlevel" ] && echo 0 > "$G/thermal_pwrlevel" 2>/dev/null
+		pgrep -x mi_thermald >/dev/null 2>&1 && stop mi_thermald 2>/dev/null
+		pgrep -x thermal-engine >/dev/null 2>&1 && stop vendor.thermal-engine 2>/dev/null
+		if [ -w "$THERMAL_MSG/cpu_limits" ]; then
+			local c m
+			{
+				for c in 0 1 2 3 4 5 6 7; do
+					m=$(cap_for "$c")
+					[ -n "$m" ] && echo "cpu$c $m"
+				done
+			} > "$THERMAL_MSG/cpu_limits" 2>/dev/null
+		fi
+	else
+		thermal_unlock_off
+	fi
 	[ "$CPU_LOCK_MAX" = "true" ] && cpu_lock game
 	[ "$EN_GPU" = "true" ] && [ "$GPU_GAME_LOCK" = "true" ] && gpu_lock_max
+	ddr_set game
 	[ "$EN_BYPASS" = "true" ] && bypass_charge on
-	if [ -w "$THERMAL_MSG/cpu_limits" ]; then
-		local c m
-		{
-			for c in 0 1 2 3 4 5 6 7; do
-				m=$(cap_for "$c")
-				[ -n "$m" ] && echo "cpu$c $m"
-			done
-		} > "$THERMAL_MSG/cpu_limits" 2>/dev/null
-	fi
 }
 
 # ---------------- statis ----------------
@@ -573,7 +674,7 @@ apply_game() {
 		# PENTING: buka cap thermal (mi_thermald) SEBELUM mengunci frekuensi.
 		# Tanpa ini, scaling_max ditahan di batas cooling (mis. 1.8GHz) dan
 		# tokokan ke freq max tidak akan diterima.
-		[ "$THERMAL_UNLOCK" = "true" ] && thermal_unlock_on
+		[ "$THERMAL_UNLOCK" = "true" ] && thermal_unlock_on || thermal_unlock_off
 		[ "$CPU_LOCK_MAX" = "true" ] && cpu_lock game
 		all_cores_online
 		cpu_boost_set game
@@ -582,12 +683,16 @@ apply_game() {
 	fi
 	sched_tune game
 	msmperf_min game
+	ddr_set game
 	[ "$EN_GPU" = "true" ] && gpu_apply "$GPU_GAME_FLOOR" "$GPU_GAME_GOV" "$GPU_FORCE_CLK" "$GPU_IDLE_TIMER"
-	[ "$EN_GPU" = "true" ] && [ "$GPU_GAME_LOCK" = "true" ] && gpu_lock_max
-	[ "$EN_BYPASS" = "true" ] && bypass_charge on
+	if [ "$EN_GPU" = "true" ]; then
+		if [ "$GPU_GAME_LOCK" = "true" ]; then gpu_lock_max; else gpu_unlock_min; fi
+	fi
+	if [ "$EN_BYPASS" = "true" ]; then bypass_charge on; else bypass_charge off; fi
+	net_game_set game
 	thermal_set game
 	touch_set game
-	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS"
+	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS ddr=$DDR_BOOST touch=$TOUCH_BOOST net=$NET_GAME_BOOST"
 }
 apply_idle() {
 	if [ "$EN_CPU" = "true" ]; then
@@ -599,12 +704,14 @@ apply_idle() {
 	fi
 	sched_tune idle
 	msmperf_min idle
+	ddr_set idle
 	[ "$EN_GPU" = "true" ] && gpu_apply "$GPU_IDLE_FLOOR" "$GPU_IDLE_GOV" 0 "$ORIG_GPU_IDLE_TIMER"
 	[ "$EN_GPU" = "true" ] && gpu_unlock_min
+	net_game_set idle
 	thermal_set idle
 	touch_set idle
-	[ "$THERMAL_UNLOCK" = "true" ] && thermal_unlock_off
-	[ "$EN_BYPASS" = "true" ] && bypass_charge off
+	thermal_unlock_off
+	bypass_charge off
 	log "IDLE: cpu=$CPU_IDLE_GOV gpu_floor=$GPU_IDLE_FLOOR"
 }
 
@@ -638,7 +745,15 @@ enforce_global() {
 
 # ---------------- inisialisasi ----------------
 apply_static
+build_ddr_list
 build_thermal_list
+ORIG_NET_NOTSOL=$(cat /proc/sys/net/ipv4/tcp_notsent_lowat 2>/dev/null)
+ORIG_NET_AUTOCORK=$(cat /proc/sys/net/ipv4/tcp_autocorking 2>/dev/null)
+ORIG_NET_SSAI=$(cat /proc/sys/net/ipv4/tcp_slow_start_after_idle 2>/dev/null)
+ORIG_NET_METRICS=$(cat /proc/sys/net/ipv4/tcp_no_metrics_save 2>/dev/null)
+ORIG_NET_BUSY_POLL=$(cat /proc/sys/net/core/busy_poll 2>/dev/null)
+ORIG_NET_BUSY_READ=$(cat /proc/sys/net/core/busy_read 2>/dev/null)
+log "ddr: $(wc -l < "$DDR_LIST" 2>/dev/null) node target"
 log "thermal: $(wc -l < "$TZ_LIST" 2>/dev/null) zone target"
 
 # baseline: sesuai MODE (global = cap CPU selalu; gaming = idle)
@@ -662,6 +777,7 @@ while :; do
 	if [ -f "$RELOAD" ]; then
 		rm -f "$RELOAD"
 		load_config
+		sanitize_governors
 		apply_static
 		if [ "$MODE" = "global" ]; then
 			apply_global; state=global

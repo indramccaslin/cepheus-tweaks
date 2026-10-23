@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.0 (versionCode 10000)
+- **Skema versi baru** — penomoran versi direset ke 1.0.0; riwayat versi lama di bawah dipertahankan.
+- **Touch Response Boost** — saat game, filter grip/glove/cover/charger dimatikan agar sentuhan lebih responsif; nilai asli dipulihkan saat idle. Input-boost CPU tetap aktif.
+- **Network Boost** — tuning latensi TCP hanya saat game: `tcp_notsent_lowat`, autocorking off, slow-start-after-idle off, no metrics save, busy polling. Semua dipulihkan saat idle.
+- **DDR Boost** — floor bandwidth/latency DDR, LLCC, dan GPU bus dinaikkan ke maksimum selama game lalu dipulihkan saat idle.
+- **WebUI baru** — hero dashboard dengan status pill, kartu **Optimasi Game** berisi toggle Touch/Network/DDR/GPU/Thermal/Bypass, tema gelap glassmorphism, animasi halus, dan switch modern.
+- **Perbaikan WebUI** — label aplikasi sistem pada app picker, fallback daftar aplikasi sistem, dan status governor/frekuensi di dashboard.
+
+## v3.6.0 (versionCode 30060)
+- **Tanpa Encore** — integrasi dan jalur deteksi Encore dihapus; modul berdiri sendiri sepenuhnya.
+- **Pemilih governor di WebUI** — kartu **Governor** baru: CPU (game/idle) dan GPU (game/idle) dengan daftar governor yang tersedia kernel, deskripsi singkat, dan terapkan langsung (reload otomatis).
+- **Sanitasi governor** — `service.sh` memvalidasi governor dari `tweak.conf` terhadap `scaling_available_governors`/`available_governors`, fallback aman bila nilai tidak didukung.
+- **WebUI & modul diperbarui** — teks, versi module.prop, update.json, dan customize.sh disesuaikan.
+
 ## v3.5.0 (versionCode 30050)
 - **Semua frekuensi tersedia di WebUI** — tabel Little / Mid / Prime kini menampilkan **seluruh** step frekuensi yang dilaporkan kernel (`scaling_available_frequencies`), dibaca dinamis dari `/sys/devices/system/cpu/cpufreq/policy{0,4,7}`. Ada penanda *Maksimum (stok)* dan *Minimum*, serta fallback statis bila node tidak terbaca.
 - **Expand/collapse per cluster** — kartu Little / Mid / Prime dapat diklik untuk membuka/menutup daftar frekuensi; header menampilkan frekuensi terpilih. Status buka diingat per cluster (localStorage).
