@@ -2,6 +2,7 @@
 
 ## v1.0.0 (versionCode 10000)
 - **Skema versi baru** — penomoran versi direset ke 1.0.0; riwayat versi lama di bawah dipertahankan.
+- **Mode Default (stok ROM)** — mode `global` kini benar-benar stok: tidak ada tuning CPU/GPU/thermal/I/O/VM/net/kernel dan semua nilai asli dipulihkan. Mode ini menjadi default saat modul dipasang.
 - **Touch Response Boost** — saat game, filter grip/glove/cover/charger dimatikan agar sentuhan lebih responsif; nilai asli dipulihkan saat idle. Input-boost CPU tetap aktif.
 - **Network Boost** — tuning latensi TCP hanya saat game: `tcp_notsent_lowat`, autocorking off, slow-start-after-idle off, no metrics save, busy polling. Semua dipulihkan saat idle.
 - **DDR Boost** — floor bandwidth/latency DDR, LLCC, dan GPU bus dinaikkan ke maksimum selama game lalu dipulihkan saat idle.

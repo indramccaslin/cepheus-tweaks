@@ -37,7 +37,7 @@ The module also exposes `update.json` so the manager can check for updates.
 
 Manager → **Modules** → **Cepheus Tweaks** → **WebUI**:
 
-- **Mode** — Global (CPU frequency cap only, always on) or Gaming (full profile while a game is active).
+- **Mode** — Default (pure ROM stock, no tweaks applied) or Gaming (full profile while a game is active). Default is used on first install.
 - **CPU frequency** — pick the maximum frequency for Little / Mid / Prime.
 - **Governor** — pick CPU/GPU governors for game and idle.
 - **Optimasi Game** — toggle Touch Response, Network Boost, DDR Boost, GPU Max Lock, Thermal Unlock and Bypass Charging.

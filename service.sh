@@ -13,11 +13,11 @@
 # Saat keluar game: semua dipulihkan ke nilai idle.
 #
 # MODE (tweak.conf):
-#   gaming (default) = perilaku di atas (profil lengkap saat game terdeteksi).
-#   global           = HANYA batas frekuensi maksimum CPU (*_MAX) yang aktif,
-#                      berlaku terus (siaga & game); semua fitur lain dimatikan.
+#   global (default) = stok ROM: tidak ada tuning yang diterapkan. Modul hanya
+#                      memulihkan nilai asli dan tidak menyentuh apa pun.
+#   gaming           = perilaku di atas (profil lengkap saat game terdeteksi).
 #
-# Statis (sekali): I/O scheduler/readahead, VM, NET, kernel.
+# Statis (hanya Mode Gaming): I/O scheduler/readahead, VM, NET, kernel.
 # WebUI (webroot/) bisa mengubah gamelist.txt & tweak.conf lalu men-*touch*
 # $MODDIR/.reload -> worker membaca ulang tanpa reboot.
 #
@@ -92,6 +92,7 @@ THERMAL_MSG=/sys/class/thermal/thermal_message
 GAMELIST="$MODDIR/gamelist.txt"
 TZ_LIST="$MODDIR/.thermal_list"
 DDR_LIST="$MODDIR/.ddr_orig"
+STATIC_LIST="$MODDIR/.static_orig"
 FTS=/sys/devices/platform/soc/c80000.i2c/i2c-2/2-0049
 MSMPERF=/sys/module/msm_performance/parameters
 
@@ -148,11 +149,10 @@ game_active() {
 
 # ---------------- config ----------------
 load_config() {
-	# MODE: global = HANYA batas frekuensi CPU (*_MAX), berlaku terus (siaga &
-	#       game); semua fitur lain dimatikan. gaming = profil lengkap saat game
-	#       terdeteksi (perilaku lama).
-	MODE=$(read_opt MODE gaming)
-	case "$MODE" in global|gaming) ;; *) MODE=gaming ;; esac
+	# MODE: global (default) = stok ROM, tanpa tuning apa pun. gaming = profil
+	#       lengkap saat game terdeteksi.
+	MODE=$(read_opt MODE global)
+	case "$MODE" in global|gaming) ;; *) MODE=global ;; esac
 	EN_CPU=$(read_opt GP_CPU true)
 	EN_GPU=$(read_opt GP_GPU true)
 	EN_IO=$(read_opt GP_IO true)
@@ -624,6 +624,48 @@ enforce_game() {
 }
 
 # ---------------- statis ----------------
+# Simpan nilai asli node statis agar Mode Default bisa kembali 100% stok.
+save_node() {
+	local v
+	v=$(cat "$1" 2>/dev/null)
+	[ -n "$v" ] && echo "static|$1|$v" >> "$STATIC_LIST"
+}
+capture_static() {
+	: > "$STATIC_LIST"
+	local d s
+	for d in /sys/block/sd* /sys/block/mmcblk*; do
+		[ -d "$d/queue" ] || continue
+		s=$(sed -n 's/.*\[\([^]]*\)\].*/\1/p' "$d/queue/scheduler" 2>/dev/null)
+		[ -n "$s" ] && echo "io|$d/queue/scheduler|$s" >> "$STATIC_LIST"
+		save_node "$d/queue/read_ahead_kb"
+		save_node "$d/queue/nr_requests"
+	done
+	save_node /proc/sys/vm/vfs_cache_pressure
+	save_node /proc/sys/vm/dirty_writeback_centisecs
+	save_node /proc/sys/vm/swappiness
+	save_node /proc/sys/vm/stat_interval
+	save_node /proc/sys/vm/min_free_kbytes
+	save_node /proc/sys/net/ipv4/tcp_low_latency
+	save_node /proc/sys/net/ipv4/tcp_fastopen
+	save_node /proc/sys/net/core/rmem_max
+	save_node /proc/sys/net/core/wmem_max
+	save_node /proc/sys/net/core/somaxconn
+	save_node /proc/sys/net/ipv4/tcp_max_syn_backlog
+	save_node /proc/sys/net/ipv4/tcp_rmem
+	save_node /proc/sys/net/ipv4/tcp_wmem
+	save_node /proc/sys/kernel/perf_cpu_time_max_percent
+	save_node /proc/sys/fs/inotify/max_user_instances
+	save_node /proc/sys/fs/inotify/max_user_watches
+	save_node /proc/sys/fs/inotify/max_queued_events
+}
+restore_static() {
+	[ -s "$STATIC_LIST" ] || return 0
+	local v p kind
+	while IFS='|' read -r kind p v; do
+		[ -n "$p" ] || continue
+		wr "$p" "$v"
+	done < "$STATIC_LIST"
+}
 apply_static() {
 	if [ "$EN_IO" = "true" ]; then
 		local d
@@ -715,36 +757,33 @@ apply_idle() {
 	log "IDLE: cpu=$CPU_IDLE_GOV gpu_floor=$GPU_IDLE_FLOOR"
 }
 
-# ---------------- mode global (CPU-only, selalu) ----------------
-# Mode Global: HANYA batas frekuensi maksimum CPU (*_MAX) yang diterapkan, dan
-# berlaku terus (siaga & game). Semua fitur lain dipulihkan ke stok/dimatikan.
-apply_global() {
-	# stok dulu: governor idle, GPU idle, thermal hidup, bypass off, dst.
-	apply_idle
-	# lalu pasang plafon frekuensi tiap cluster (min dibiarkan stok).
-	local p mx fmax
-	for p in 0 4 7; do
-		fmax="$CPUFREQ/policy$p/scaling_max_freq"
-		[ -w "$fmax" ] || continue
-		mx=$(cap_for "$p")
-		[ -n "$mx" ] && wr "$fmax" "$mx"
-	done
-	log "GLOBAL: cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX (cpu-only, selalu aktif)"
-}
-# re-enforce ringan: turunkan hanya bila scaling_max naik DI ATAS cap (mis. ROM
-# reset). Tidak melawan thermal yang memang menurunkan (biarkan proteksi HW).
-enforce_global() {
-	local p mx cur fmax
-	for p in 0 4 7; do
-		fmax="$CPUFREQ/policy$p/scaling_max_freq"
-		[ -w "$fmax" ] || continue
-		mx=$(cap_for "$p"); cur=$(cat "$fmax" 2>/dev/null)
-		[ -n "$mx" ] && [ -n "$cur" ] && [ "$cur" -gt "$mx" ] 2>/dev/null && wr "$fmax" "$mx"
-	done
+# ---------------- mode default (stok ROM) ----------------
+# Mode Default: tidak menerapkan tuning apa pun. Semua nilai dikembalikan ke
+# aslinya (CPU, GPU, thermal, touch, net, DDR, I/O, VM, kernel).
+apply_stock() {
+	cpu_gov orig
+	cpu_lock idle
+	[ -n "$ORIG_CB_FREQ" ] && wr "$CB/input_boost_freq" "$ORIG_CB_FREQ"
+	[ -n "$ORIG_CB_MS" ] && wr "$CB/input_boost_ms" "$ORIG_CB_MS"
+	[ -n "$ORIG_CB_SBOI" ] && wr "$CB/sched_boost_on_input" "$ORIG_CB_SBOI"
+	wr /proc/sys/kernel/sched_boost 0
+	wr "$STUNE/schedtune.boost" 0
+	sched_tune idle
+	msmperf_min idle
+	ddr_set idle
+	gpu_apply "${ORIG_GPU_PWRLEVEL:-6}" "${ORIG_GPU_GOV:-msm-adreno-tz}" 0 "${ORIG_GPU_IDLE_TIMER:-}"
+	gpu_unlock_min
+	net_game_set idle
+	thermal_set idle
+	touch_set idle
+	thermal_unlock_off
+	bypass_charge off
+	restore_static
+	log "DEFAULT: stok ROM (tanpa tuning)"
 }
 
 # ---------------- inisialisasi ----------------
-apply_static
+capture_static
 build_ddr_list
 build_thermal_list
 ORIG_NET_NOTSOL=$(cat /proc/sys/net/ipv4/tcp_notsent_lowat 2>/dev/null)
@@ -756,11 +795,12 @@ ORIG_NET_BUSY_READ=$(cat /proc/sys/net/core/busy_read 2>/dev/null)
 log "ddr: $(wc -l < "$DDR_LIST" 2>/dev/null) node target"
 log "thermal: $(wc -l < "$TZ_LIST" 2>/dev/null) zone target"
 
-# baseline: sesuai MODE (global = cap CPU selalu; gaming = idle)
+# baseline: default/global = stok ROM; gaming = idle
 if [ "$MODE" = "global" ]; then
-	apply_global
+	apply_stock
 	state=global
 else
+	apply_static
 	apply_idle
 	state=idle
 fi
@@ -778,23 +818,23 @@ while :; do
 		rm -f "$RELOAD"
 		load_config
 		sanitize_governors
-		apply_static
 		if [ "$MODE" = "global" ]; then
-			apply_global; state=global
-		elif game_active; then
-			apply_game; state=game
+			apply_stock; state=global
 		else
-			apply_idle; state=idle
+			apply_static
+			if game_active; then
+				apply_game; state=game
+			else
+				apply_idle; state=idle
+			fi
 		fi
 		log "reload: konfigurasi dibaca ulang (mode=$MODE)"
 	fi
 
 	if [ "$MODE" = "global" ]; then
 		if [ "$state" != "global" ]; then
-			apply_global
+			apply_stock
 			state=global
-		else
-			enforce_global
 		fi
 	elif game_active; then
 		if [ "$state" != "game" ]; then

@@ -218,7 +218,7 @@
   <div class="modes">
     <div class="mode" data-m="global" id="modeGlobal" onclick="pickMode('global')">
       <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-6-3.7-9S9.5 5.6 12 3Z"/></svg></div>
-      <b>Global</b>
+      <b>Default</b>
       <small data-i18n="globalDesc"></small>
     </div>
     <div class="mode" data-m="gaming" id="modeGaming" onclick="pickMode('gaming')">
@@ -352,14 +352,14 @@ var IC = {
 var LANG = lsGet('cg_lang') || 'id';
 var T = {
   modeTitle:{id:'Mode',en:'Mode'},
-  modeHintGlobal:{id:'Mode Global hanya menerapkan batas frekuensi maksimum CPU, dan berlaku secara berkelanjutan (siaga maupun saat bermain game). Fitur lain dinonaktifkan.',
-                  en:'Global mode applies only the maximum CPU frequency caps, and does so continuously (standby as well as while gaming). All other features are disabled.'},
+  modeHintGlobal:{id:'Mode Default mengembalikan semua pengaturan ke bawaan ROM. Tidak ada tuning yang diterapkan dan semua kontrol dinonaktifkan.',
+                  en:'Default mode restores every setting to the ROM stock values. No tweaks are applied and all controls are disabled.'},
   modeHintGaming:{id:'Mode Gaming mengaktifkan seluruh fitur secara otomatis ketika aplikasi game berjalan di latar depan.',
                   en:'Gaming mode enables every feature automatically whenever a game app is brought to the foreground.'},
-  globalDesc:{id:'Batas frekuensi CPU yang berlaku terus-menerus',en:'Always-on CPU frequency caps'},
+  globalDesc:{id:'Stok ROM, tanpa tuning apa pun',en:'Stock ROM, no tweaks applied'},
   gamingDesc:{id:'Profil performa lengkap, aktif saat game',en:'Full performance profile while gaming'},
-  cpuHintGlobal:{id:'Pilih batas frekuensi maksimum untuk masing-masing cluster CPU. Batas ini diterapkan terus-menerus untuk menjaga suhu dan memperpanjang daya tahan baterai.',
-                 en:'Choose the maximum frequency cap for each CPU cluster. The cap is applied continuously to manage thermals and extend battery life.'},
+  cpuHintGlobal:{id:'Tidak tersedia di Mode Default. Pilih Mode Gaming untuk mengatur batas frekuensi CPU.',
+                 en:'Not available in Default mode. Select Gaming mode to configure CPU frequency caps.'},
   cpuHintGaming:{id:'Pilih batas frekuensi maksimum untuk masing-masing cluster CPU saat bermain game. Menurunkan batas sering kali justru meningkatkan performa jangka panjang, karena mekanisme thermal throttle aktif lebih lambat.',
                  en:'Choose the maximum frequency cap for each CPU cluster while gaming. Lowering the cap frequently improves sustained performance, as thermal throttling engages later.'},
   setTitle:{id:'Pengaturan',en:'Settings'},
@@ -368,8 +368,8 @@ var T = {
   langIdDesc:{id:'Teks antarmuka berbahasa Indonesia.',en:'Interface text in Indonesian.'},
   langEnDesc:{id:'Teks antarmuka berbahasa Inggris.',en:'Interface text in English.'},
   govTitle:{id:'Governor',en:'Governor'},
-  govHintGlobal:{id:'Mode Global hanya memakai governor CPU idle (batas frekuensi tetap berlaku). Pilihan governor game dan GPU baru dipakai saat Mode Gaming.',
-                 en:'Global mode only uses the idle CPU governor (frequency caps still apply). Game and GPU governor choices are used in Gaming mode.'},
+  govHintGlobal:{id:'Tidak tersedia di Mode Default. Pilih Mode Gaming untuk mengatur governor CPU/GPU.',
+                 en:'Not available in Default mode. Select Gaming mode to configure CPU/GPU governors.'},
   govHintGaming:{id:'Governor menentukan cara kernel menaikkan dan menurunkan frekuensi. Governor game dipakai selama game terdeteksi; governor idle dipakai di luar game.',
                  en:'The governor controls how the kernel raises and lowers frequencies. The game governor is used while a game is detected; the idle governor is used outside games.'},
   govCpuGame:{id:'CPU • saat game',en:'CPU • gaming'},
@@ -451,15 +451,17 @@ function applyI18n(){
 function refreshTexts(){ applyI18n(); setModeUI(); renderCpu(); renderGov(); renderFeatures(); renderGames(); renderQuick(); renderApps(); renderLangs(); renderHero(); }
 
 /* ===================== state ===================== */
-var state = { games:[], apps:null, mode:'gaming', cpu:{}, gov:{}, govOpts:{cpu:[],gpu:[]}, features:{} };
+var state = { games:[], apps:null, mode:'global', cpu:{}, gov:{}, govOpts:{cpu:[],gpu:[]}, features:{} };
 
 /* ===================== mode (global / gaming) ===================== */
 function setModeUI(){
   var g = document.getElementById('modeGlobal'), m = document.getElementById('modeGaming');
   if (g) g.classList.toggle('sel', state.mode==='global');
   if (m) m.classList.toggle('sel', state.mode==='gaming');
-  var gc = document.getElementById('gamecard');
-  if (gc) gc.classList.toggle('hidden', state.mode!=='gaming');
+  ['gamecard','cpucards','cpuHint','govcard','boostcard'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', state.mode!=='gaming');
+  });
   var mh = document.getElementById('modeHint');
   if (mh) mh.textContent = state.mode==='global' ? t('modeHintGlobal') : t('modeHintGaming');
   var ch = document.getElementById('cpuHint');
@@ -727,7 +729,7 @@ function fmtCap(v){
 }
 function renderHero(){
   var pm = document.getElementById('pillMode');
-  if (pm) pm.textContent = state.mode==='global' ? 'Global Mode' : 'Gaming Mode';
+  if (pm) pm.textContent = state.mode==='global' ? 'Default Mode' : 'Gaming Mode';
   var pc = document.getElementById('pillCpu');
   if (pc){
     var caps = [state.cpu.LITTLE_MAX, state.cpu.MID_MAX, state.cpu.PRIME_MAX];
@@ -836,8 +838,8 @@ function pick(p){ addPkg(p); toast((LANG==='id'?'Ditambah: ':'Added: ')+p); clos
 async function loadAll(){
   var txt = "";
   try{ txt = (await readLines(fileConf())).join('\n'); }catch(e){}
-  state.mode = confGet(txt, "MODE", "gaming");
-  if (state.mode !== "global" && state.mode !== "gaming") state.mode = "gaming";
+  state.mode = confGet(txt, "MODE", "global");
+  if (state.mode !== "global" && state.mode !== "gaming") state.mode = "global";
   state.cpu = {};
   await loadFreqs();
   CPU_CLUSTERS.forEach(function(c){ state.cpu[c.key] = confGet(txt, c.key, c.dflt); });
