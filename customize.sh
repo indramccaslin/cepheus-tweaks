@@ -6,7 +6,7 @@ command -v ui_print >/dev/null 2>&1 || ui_print() { echo "  $1"; }
 
 ui_print " "
 ui_print "  #####################################"
-ui_print "  #        CEPHEUS TWEAKS  v1.0.0      #"
+ui_print "  #        CEPHEUS TWEAKS  v1.0.1      #"
 ui_print "  #   Xiaomi Mi 9 (cepheus/sm8150)    #"
 ui_print "  #####################################"
 ui_print " "

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.1 (versionCode 10001)
+- **Rilis penyelaras** — zip rilis diselaraskan dengan source `main`; sebelumnya aset `v1.0.0` sudah memuat perubahan ini tetapi tag masih di commit lama.
+- **Mode Default (global) murni stok ROM** — tidak ada tuning CPU/GPU/thermal/I/O/VM/net/kernel dan semua nilai asli dipulihkan; mode ini aktif secara default saat modul dipasang.
+- **Metadata author** — author modul diset ke **GANÉS**.
+
 ## v1.0.0 (versionCode 10000)
 - **Skema versi baru** — penomoran versi direset ke 1.0.0; riwayat versi lama di bawah dipertahankan.
 - **Mode Default (stok ROM)** — mode `global` kini benar-benar stok: tidak ada tuning CPU/GPU/thermal/I/O/VM/net/kernel dan semua nilai asli dipulihkan. Mode ini menjadi default saat modul dipasang.
