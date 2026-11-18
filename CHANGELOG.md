@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.1 (versionCode 10005)
+- **Perbaikan restore DND** — DND hanya dipulihkan bila modul yang menyalakannya (flag `.dnd_active`). Perubahan DND manual di luar game tidak akan ditimpa saat reload atau restart worker.
+
 ## v1.2.0 (versionCode 10004)
 - **Auto DND saat game** — notifikasi otomatis dibungkam begitu game berjalan, lalu mode DND milik user dipulihkan persis saat keluar game.
 - **Kontrol DND** — `GP_DND` untuk mengaktifkan/menonaktifkan fitur dan `DND_MODE` (`priority` / `alarms` / `on`) untuk memilih level. Keduanya tersedia di WebUI: toggle di **Beranda**, pemilih level di **Pengaturan**.

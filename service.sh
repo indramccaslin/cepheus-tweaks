@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (service.sh) v1.2.0
+# Cepheus Tweaks (service.sh) v1.2.1
 # Berdiri sendiri untuk KernelSU-Next (tanpa daemon tambahan).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
@@ -69,7 +69,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v1.2.0) boot#$c"
+	log "invoked (v1.2.1) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -80,7 +80,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v1.2.0)"
+	log "started (v1.2.1)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0
@@ -92,6 +92,7 @@ TZ_LIST="$MODDIR/.thermal_list"
 DDR_LIST="$MODDIR/.ddr_orig"
 STATIC_LIST="$MODDIR/.static_orig"
 DND_ORIG="$MODDIR/.dnd_orig"
+DND_FLAG="$MODDIR/.dnd_active"
 FTS=/sys/devices/platform/soc/c80000.i2c/i2c-2/2-0049
 MSMPERF=/sys/module/msm_performance/parameters
 
@@ -158,18 +159,23 @@ dnd_arg() {
 # Catat zen_mode "stok" (milik user). Dipanggil saat standby, jadi nilai yang
 # tersimpan selalu mode DND yang dipakai user sebelum game terakhir.
 refresh_dnd_orig() {
+	# Jangan pernah menimpa baseline dengan DND yang sedang dipasang modul.
+	[ -f "$DND_FLAG" ] && return 0
 	local z
 	z=$(settings get global zen_mode 2>/dev/null)
 	case "$z" in ''|*[!0-9]*) z=0 ;; esac
 	[ "$(cat "$DND_ORIG" 2>/dev/null)" = "$z" ] || echo "$z" > "$DND_ORIG" 2>/dev/null
 }
 
-# Kembalikan DND ke mode milik user (dipakai saat keluar game / fitur mati).
+# Kembalikan DND ke mode milik user. Hanya jalan bila modul yang menyalakannya
+# (flag ada) — jadi perubahan DND manual di standby tidak pernah ditimpa.
 dnd_stock() {
+	[ -f "$DND_FLAG" ] || return 0
 	local z
 	z=$(cat "$DND_ORIG" 2>/dev/null)
 	case "$z" in ''|*[!0-9]*) z=0 ;; esac
 	cmd notification set_dnd "$(dnd_arg "$z")" >/dev/null 2>&1
+	rm -f "$DND_FLAG" 2>/dev/null
 	log "DND: pulihkan (zen=$z)"
 }
 
@@ -177,6 +183,7 @@ dnd_stock() {
 dnd_game() {
 	if [ "$EN_DND" = "true" ]; then
 		cmd notification set_dnd "$DND_MODE" >/dev/null 2>&1
+		touch "$DND_FLAG" 2>/dev/null
 		log "DND: aktif ($DND_MODE)"
 	else
 		dnd_stock

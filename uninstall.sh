@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (uninstall.sh) v1.2.0
+# Cepheus Tweaks (uninstall.sh) v1.2.1
 #
 # Kembalikan semua yang diubah modul ke nilai wajar/stok:
 #   - CPU governor -> schedutil, batas frekuensi -> stok
@@ -68,7 +68,7 @@ echo 0 > /proc/sys/net/core/busy_poll 2>/dev/null
 echo 0 > /proc/sys/net/core/busy_read 2>/dev/null
 
 # pulihkan DND ke mode milik user (jika modul dicopot saat game masih aktif)
-if [ -r "$MODDIR/.dnd_orig" ]; then
+if [ -r "$MODDIR/.dnd_orig" ] && [ -f "$MODDIR/.dnd_active" ]; then
 	z=$(cat "$MODDIR/.dnd_orig" 2>/dev/null)
 	case "$z" in
 		0) a=off ;;
