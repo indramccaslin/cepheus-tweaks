@@ -3,4 +3,4 @@ name=Cepheus Tweaks
 author=GANÉS
 version=v1.1.1
 versionCode=10003
-description=Semua optimasi aktif HANYA saat game dibuka lalu dipulihkan penuh ke stok saat keluar (termasuk I/O, VM, NET, kernel). Tanpa mode Default. Kunci CPU & GPU maksimum, touch boost, DDR boost, thermal unlock, bypass charging. WebUI: dashboard, daftar game, governor, dan toggle optimasi. Xiaomi Mi 9 (cepheus/sm8150).
+description=⚡ Mesin performa game-only untuk Mi 9 (cepheus): CPU & GPU dipaku di clock maks, thermal unlock, touch ngebut, DDR + network boost, bypass charging. Nyala saat game, balik 100% stok saat keluar. WebUI 3 tab, tanpa mode ribet.
