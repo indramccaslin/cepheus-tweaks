@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.1 (versionCode 10003)
+- **WebUI 3 tab** — navigasi bawah model Encore: **Beranda** (status + optimasi game), **Game** (daftar paket), **Pengaturan** (frekuensi CPU, governor, bahasa). Tab terakhir tersimpan di localStorage.
+- **Tata letak lebih rapi** — kartu dibagi per halaman, scroll lebih pendek, dan body memberi ruang untuk navigation bar bawah.
+
 ## v1.1.0 (versionCode 10002)
 - **Perilaku game-only penuh** — semua tuning, termasuk statis (I/O scheduler/readahead, VM, base TCP, kernel/inotify), kini diterapkan **hanya saat game/benchmark di foreground** dan dipulihkan penuh ke stok ROM saat keluar game.
 - **Mode Default dihapus** — tidak ada pemilih `global`/`gaming`; worker selalu memakai profil game otomatis. Di luar game modul berada di kondisi standby stok.

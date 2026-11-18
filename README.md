@@ -38,6 +38,12 @@ The module also exposes `update.json` so the manager can check for updates.
 
 Manager → **Modules** → **Cepheus Tweaks** → **WebUI**:
 
+The interface uses a three-tab bottom navigation (Encore-style):
+
+- **Beranda / Home** — status + game optimization toggles.
+- **Game / Games** — add/remove game packages.
+- **Pengaturan / Settings** — CPU frequency caps, governors, language.
+
 - **Status** — automatically Gaming while a game is in the foreground, stock ROM otherwise. No mode selector.
 - **CPU frequency** — pick the maximum frequency for Little / Mid / Prime.
 - **Governor** — pick CPU/GPU governors used during games.

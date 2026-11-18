@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (service.sh) v1.1.0
+# Cepheus Tweaks (service.sh) v1.1.1
 # Berdiri sendiri untuk KernelSU-Next (tanpa daemon tambahan).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
@@ -68,7 +68,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v1.1.0) boot#$c"
+	log "invoked (v1.1.1) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -79,7 +79,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v1.1.0)"
+	log "started (v1.1.1)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0

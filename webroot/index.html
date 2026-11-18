@@ -103,12 +103,30 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
   .hidden{display:none!important}
+  /* ===== bottom navigation (3 tab, model Encore) ===== */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;align-items:stretch;
+    padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));
+    background:rgba(12,16,24,.92);backdrop-filter:blur(18px);
+    border-top:1px solid rgba(255,255,255,.08);box-shadow:0 -18px 40px -28px #000}
+  .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:transparent;border:0;border-radius:14px;padding:6px 2px;color:var(--dim);font-size:11px;font-weight:600;
+    box-shadow:none;cursor:pointer;transition:color .2s ease}
+  .tab:hover{background:transparent;transform:none;filter:none}
+  .tab .ti{width:46px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+    background:transparent;transition:background .2s ease,width .2s ease}
+  .tab .ti svg{width:20px;height:20px;color:currentColor}
+  .tab .tl{line-height:1.1;white-space:nowrap}
+  .tab.sel{color:#fff}
+  .tab.sel .ti{background:linear-gradient(135deg,rgba(79,140,255,.32),rgba(155,107,255,.26))}
+  .tab[data-tab="games"].sel .ti{background:linear-gradient(135deg,rgba(255,106,61,.3),rgba(255,61,110,.24))}
+  .page{animation:fadeIn .22s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
   /* ===== v3.7 visual refresh ===== */
   :root{--acc:#4f8cff;--acc2:#9b6bff;--acc3:#22d3ee;--ok:#34e3a4;--err:#ff5c7a}
   html{scroll-behavior:smooth}
   body{
-    max-width:760px;padding:18px 14px 76px;
+    max-width:760px;padding:18px 14px 104px;
     background:
       radial-gradient(1000px 620px at 110% -10%,rgba(155,107,255,.22),transparent 60%),
       radial-gradient(800px 520px at -15% 5%,rgba(34,211,238,.14),transparent 55%),
@@ -202,7 +220,7 @@
       <h1>Cepheus <span>Tweaks</span></h1>
       <div class="sub"><span class="dot"></span> Xiaomi Mi 9 &bull; SM8150</div>
     </div>
-    <div class="badge" id="verBadge">v1.1.0</div>
+    <div class="badge" id="verBadge">v1.1.1</div>
   </div>
   <div class="pills">
     <span class="pill mode" id="pillMode">Gaming</span>
@@ -213,6 +231,8 @@
 
 <div id="noksu" class="warn hidden" data-i18n="noksu"></div>
 
+<main>
+<section class="page" id="page-home">
 <div class="card">
   <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="modeTitle"></span></h2>
   <div class="hint" id="modeHint"></div>
@@ -222,20 +242,6 @@
       <b>Gaming</b>
       <small data-i18n="gamingDesc"></small>
     </div>
-  </div>
-</div>
-
-<div class="hint" style="margin:2px 4px 10px" id="cpuHint"></div>
-<div id="cpucards"></div>
-
-<div class="card" id="govcard">
-  <div class="cardhead" onclick="toggleGov()">
-    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="govTitle"></span></h2>
-    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-  </div>
-  <div class="coll" id="govbody">
-    <div class="hint" style="margin-top:10px" id="govHint"></div>
-    <div id="govlist"></div>
   </div>
 </div>
 
@@ -250,7 +256,9 @@
     <div id="featlist"></div>
   </div>
 </div>
+</section>
 
+<section class="page hidden" id="page-games">
 <div class="card" id="gamecard">
   <div class="cardhead" onclick="toggleGames()">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg> <span data-i18n="gameTitle"></span></h2>
@@ -273,6 +281,22 @@
     </div>
   </div>
 </div>
+</section>
+
+<section class="page hidden" id="page-settings">
+<div class="hint" style="margin:2px 4px 10px" id="cpuHint"></div>
+<div id="cpucards"></div>
+
+<div class="card" id="govcard">
+  <div class="cardhead" onclick="toggleGov()">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="govTitle"></span></h2>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="coll" id="govbody">
+    <div class="hint" style="margin-top:10px" id="govHint"></div>
+    <div id="govlist"></div>
+  </div>
+</div>
 
 <div class="card" id="setcard">
   <div class="cardhead" onclick="toggleSettings()">
@@ -285,6 +309,23 @@
     <ul class="gl" id="langlist"></ul>
   </div>
 </div>
+</section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab sel" data-tab="home" onclick="switchTab('home')">
+    <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>
+    <span class="tl" data-i18n="tabHome"></span>
+  </button>
+  <button class="tab" data-tab="games" onclick="switchTab('games')">
+    <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="4.5"/><path d="M6.5 10.5v2M5.5 11.5h2M15.5 11h.01M18 13.2h.01"/></svg></span>
+    <span class="tl" data-i18n="tabGames"></span>
+  </button>
+  <button class="tab" data-tab="settings" onclick="switchTab('settings')">
+    <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+    <span class="tl" data-i18n="tabSettings"></span>
+  </button>
+</nav>
 
 <div class="modal" id="modal">
   <div class="sheet">
@@ -348,6 +389,9 @@ var IC = {
 var LANG = lsGet('cg_lang') || 'id';
 var T = {
   modeTitle:{id:'Mode',en:'Mode'},
+  tabHome:{id:'Beranda',en:'Home'},
+  tabGames:{id:'Game',en:'Games'},
+  tabSettings:{id:'Pengaturan',en:'Settings'},
   modeHintGaming:{id:'Semua optimasi aktif otomatis hanya saat game/benchmark berada di latar depan. Di luar game, seluruh pengaturan kembali ke stok ROM.',
                   en:'Every tweak is applied automatically only while a game/benchmark is in the foreground. Outside games, all settings return to ROM stock.'},
   gamingDesc:{id:'Game-only: aktif saat game, stok saat keluar',en:'Game-only: active while gaming, stock otherwise'},
@@ -453,6 +497,19 @@ function setModeUI(){
   if (gh) gh.textContent = t('govHintGaming');
   document.body.dataset.mode = 'gaming';
   renderHero();
+}
+/* ===================== navigasi 3 tab ===================== */
+var TAB_KEY = 'cg_tab';
+function switchTab(tab, quiet){
+  if (['home','games','settings'].indexOf(tab) < 0) tab = 'home';
+  ['home','games','settings'].forEach(function(t){
+    var page = document.getElementById('page-' + t);
+    if (page) page.classList.toggle('hidden', t !== tab);
+    var btn = document.querySelector('.tab[data-tab="' + t + '"]');
+    if (btn) btn.classList.toggle('sel', t === tab);
+  });
+  lsSet(TAB_KEY, tab);
+  if (!quiet && window.scrollTo) window.scrollTo({top:0, behavior:'smooth'});
 }
 
 /* ===================== pengaturan: bahasa ===================== */
@@ -837,6 +894,7 @@ async function boot(){
   if (lsGet('cg_gov_open')==='1'){ document.getElementById('govcard').classList.add('open'); document.getElementById('govbody').classList.add('open'); }
   if (lsGet('cg_boost_open')==='1'){ document.getElementById('boostcard').classList.add('open'); document.getElementById('boostbody').classList.add('open'); }
   await loadAll();
+  switchTab(lsGet(TAB_KEY) || 'home', true);
 }
 boot();
 </script>
