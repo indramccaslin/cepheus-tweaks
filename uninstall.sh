@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (uninstall.sh) v1.0.1
+# Cepheus Tweaks (uninstall.sh) v1.1.0
 #
 # Kembalikan semua yang diubah modul ke nilai wajar/stok:
 #   - CPU governor -> schedutil, batas frekuensi -> stok

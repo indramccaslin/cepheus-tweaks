@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0 (versionCode 10002)
+- **Perilaku game-only penuh** — semua tuning, termasuk statis (I/O scheduler/readahead, VM, base TCP, kernel/inotify), kini diterapkan **hanya saat game/benchmark di foreground** dan dipulihkan penuh ke stok ROM saat keluar game.
+- **Mode Default dihapus** — tidak ada pemilih `global`/`gaming`; worker selalu memakai profil game otomatis. Di luar game modul berada di kondisi standby stok.
+- **WebUI disederhanakan** — kartu Default dan pilihan governor idle dihapus; semua kontrol selalu terlihat. Teks menjelaskan bahwa optimasi aktif saat game saja.
+- **Perbaikan `min_free_kbytes`** — nilai tambah dihitung dari snapshot stok, sehingga reload berulang tidak menumpuk nilai.
+
 ## v1.0.1 (versionCode 10001)
 - **Rilis penyelaras** — zip rilis diselaraskan dengan source `main`; sebelumnya aset `v1.0.0` sudah memuat perubahan ini tetapi tag masih di commit lama.
 - **Mode Default (global) murni stok ROM** — tidak ada tuning CPU/GPU/thermal/I/O/VM/net/kernel dan semua nilai asli dipulihkan; mode ini aktif secara default saat modul dipasang.

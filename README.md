@@ -2,19 +2,20 @@
 
 A **standalone** KernelSU-Next (and Magisk) module that automatically locks the **CPU and GPU to maximum performance while a game is in the foreground** — stable 60 fps and anti frame-drop — for the **Xiaomi Mi 9 (cepheus, sm8150)**. Outside games the system runs normally, with no extra daemon required.
 
-It ships with a **WebUI** (KernelSU-Next Manager) dashboard to manage the game list, mode, frequency caps, governors and optimization toggles.
+It ships with a **WebUI** (KernelSU-Next Manager) dashboard to manage the game list, frequency caps, governors and optimization toggles.
 
 ## Features
 
-- **Automatic game/idle profiles** — detects the foreground game (~2 s) and switches profiles.
+- **Automatic game-only profile** — detects the foreground game (~2 s); every tweak is applied while it runs and fully restored to ROM stock when it exits. There is no mode switch.
 - **CPU max lock** — all clusters → `performance` governor, plus `scaling_min_freq = scaling_max_freq = cpuinfo_max_freq`.
 - **Per-cluster frequency caps** — choose Little / Mid / Prime maximum frequencies from the WebUI.
-- **Governor picker** — CPU and GPU governor for game and idle, read from the kernel's available governor list.
+- **Governor picker** — CPU and GPU governor used during games, read from the kernel's available governor list.
 - **GPU lock** — pinned at **770 MHz** (`min_freq = max_freq = max_gpuclk`, `min_pwrlevel = 0`).
 - **Touch response boost** — disables glove/cover/charger modes and grip suppression during games.
-- **Network boost** — lowers TCP latency during games (`tcp_notsent_lowat`, autocorking off, slow-start-after-idle off, no metrics save, busy polling); restored on idle.
-- **DDR boost** — raises the DDR / LLCC / GPU-bus bandwidth and latency floor to maximum during games, then restores idle values.
-- **Thermal unlock** — stops `mi_thermald` and opens `thermal_message/cpu_limits` + the GPU cooling clamp during games; restored on idle. Kernel emergency protection (BCL, `*-step` zones, LMH) stays active.
+- **Network boost** — lowers TCP latency during games (`tcp_notsent_lowat`, autocorking off, slow-start-after-idle off, no metrics save, busy polling); restored to stock when the game exits.
+- **DDR boost** — raises the DDR / LLCC / GPU-bus bandwidth and latency floor to maximum during games, then restores stock values.
+- **Thermal unlock** — stops `mi_thermald` and opens `thermal_message/cpu_limits` + the GPU cooling clamp during games; restored to stock when the game exits. Kernel emergency protection (BCL, `*-step` zones, LMH) stays active.
+- **Static tuning is game-only too** — I/O scheduler/readahead, VM, base TCP and kernel/inotify values are applied on game start and restored from a boot-time snapshot on exit.
 - **Bypass charging** — while gaming the phone runs off the adapter (battery `current_now ≈ 0`, cooler).
 - **Scheduler / input boost / schedtune** tuning for steadier frame pacing.
 - **Boot-safe** — runs from `service.sh` with a boot-count failsafe (auto-disables after repeated failed boots).
@@ -37,9 +38,9 @@ The module also exposes `update.json` so the manager can check for updates.
 
 Manager → **Modules** → **Cepheus Tweaks** → **WebUI**:
 
-- **Mode** — Default (pure ROM stock, no tweaks applied) or Gaming (full profile while a game is active). Default is used on first install.
+- **Status** — automatically Gaming while a game is in the foreground, stock ROM otherwise. No mode selector.
 - **CPU frequency** — pick the maximum frequency for Little / Mid / Prime.
-- **Governor** — pick CPU/GPU governors for game and idle.
+- **Governor** — pick CPU/GPU governors used during games.
 - **Optimasi Game** — toggle Touch Response, Network Boost, DDR Boost, GPU Max Lock, Thermal Unlock and Bypass Charging.
 - **Daftar Game** — add/remove packages. Type the package name manually or tap
   **Pilih dari daftar aplikasi** to pick from the installed apps.
@@ -53,13 +54,12 @@ Everything lives in `/data/adb/modules/cepheus-tweaks/tweak.conf` (also editable
 
 | Key | Default | Description |
 |---|---|---|
-| `GP_CPU` / `GP_GPU` / `GP_IO` / `GP_VM` / `GP_NET` / `GP_KERNEL` | `true` | Master switches per subsystem |
-| `GP_DYNAMIC` | `true` | `false` = apply the game profile permanently (not recommended) |
+| `GP_CPU` / `GP_GPU` / `GP_IO` / `GP_VM` / `GP_NET` / `GP_KERNEL` | `true` | Master switches per subsystem (all applied only during games) |
 | `GP_POLL` | `2` | Game-detection interval (seconds) |
-| `CPU_GAME_GOV` / `CPU_IDLE_GOV` | `performance` / `schedutil` | CPU governor for game / idle |
+| `CPU_GAME_GOV` | `performance` | CPU governor during games |
 | `CPU_LOCK_MAX` | `true` | Pin `scaling_min = scaling_max = max` during games |
-| `GPU_GAME_PWRLEVEL` / `GPU_IDLE_PWRLEVEL` | `0` / `6` | GPU power level (`0` = max clock) |
-| `GPU_GAME_GOV` / `GPU_IDLE_GOV` | `performance` / `msm-adreno-tz` | GPU governor |
+| `GPU_GAME_PWRLEVEL` | `0` | GPU power level during games (`0` = max clock) |
+| `GPU_GAME_GOV` | `performance` | GPU governor during games |
 | `GPU_GAME_LOCK` | `true` | Lock GPU at 770 MHz during games |
 | `GPU_FORCE_CLK` / `GPU_IDLE_TIMER` | `1` / `200` | Hold the max rail / idle timer |
 | `THERMAL_UNLOCK` | `true` | Stop userspace thermal daemons during games |

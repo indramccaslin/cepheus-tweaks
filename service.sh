@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (service.sh) v1.0.1
+# Cepheus Tweaks (service.sh) v1.1.0
 # Berdiri sendiri untuk KernelSU-Next (tanpa daemon tambahan).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
@@ -10,14 +10,11 @@
 #   THERM : ambang zona step dinaikkan
 #   UNLOCK: hentikan mi_thermald & thermal-engine + paksa cpu_limits ke max
 #           (menembus throttle Xiaomi yang mengunci big-core di suhu rendah)
-# Saat keluar game: semua dipulihkan ke nilai idle.
+# Saat keluar game: SEMUA nilai dikembalikan ke stok ROM (termasuk tuning
+# statis I/O, VM, NET dan kernel). Tidak ada pemilih mode: modul selalu
+# berperilaku "game-only" — stok di luar game, performa penuh saat game.
 #
-# MODE (tweak.conf):
-#   global (default) = stok ROM: tidak ada tuning yang diterapkan. Modul hanya
-#                      memulihkan nilai asli dan tidak menyentuh apa pun.
-#   gaming           = perilaku di atas (profil lengkap saat game terdeteksi).
-#
-# Statis (hanya Mode Gaming): I/O scheduler/readahead, VM, NET, kernel.
+# Statis (hanya saat game): I/O scheduler/readahead, VM, NET, kernel.
 # WebUI (webroot/) bisa mengubah gamelist.txt & tweak.conf lalu men-*touch*
 # $MODDIR/.reload -> worker membaca ulang tanpa reboot.
 #
@@ -71,7 +68,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v1.0.1) boot#$c"
+	log "invoked (v1.1.0) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -82,7 +79,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v1.0.1)"
+	log "started (v1.1.0)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0
@@ -113,12 +110,10 @@ sanitize_governors() {
 	avail=$(cat "$CPUFREQ/policy0/scaling_available_governors" 2>/dev/null)
 	if [ -n "$avail" ]; then
 		valid_gov "$CPU_GAME_GOV" "$avail" || CPU_GAME_GOV=performance
-		valid_gov "$CPU_IDLE_GOV" "$avail" || CPU_IDLE_GOV=schedutil
 	fi
 	avail=$(cat "$G/devfreq/available_governors" 2>/dev/null)
 	if [ -n "$avail" ]; then
 		valid_gov "$GPU_GAME_GOV" "$avail" || GPU_GAME_GOV=performance
-		valid_gov "$GPU_IDLE_GOV" "$avail" || GPU_IDLE_GOV=msm-adreno-tz
 	fi
 }
 
@@ -136,10 +131,7 @@ in_gamelist() {
 	return 1
 }
 
-STATIC_GAME=0
 game_active() {
-	# mode statis: profil game dipakai terus
-	[ "$STATIC_GAME" = "1" ] && return 0
 	local fg
 	# app di foreground termasuk daftar game?
 	fg=$(fg_pkg)
@@ -149,24 +141,18 @@ game_active() {
 
 # ---------------- config ----------------
 load_config() {
-	# MODE: global (default) = stok ROM, tanpa tuning apa pun. gaming = profil
-	#       lengkap saat game terdeteksi.
-	MODE=$(read_opt MODE global)
-	case "$MODE" in global|gaming) ;; *) MODE=global ;; esac
 	EN_CPU=$(read_opt GP_CPU true)
 	EN_GPU=$(read_opt GP_GPU true)
 	EN_IO=$(read_opt GP_IO true)
 	EN_VM=$(read_opt GP_VM true)
 	EN_NET=$(read_opt GP_NET true)
 	EN_KERNEL=$(read_opt GP_KERNEL true)
-	GP_DYN=$(read_opt GP_DYNAMIC true)
 	# interval poll deteksi game (detik); kecil = responsif, besar = hemat daya
 	GP_POLL=$(read_opt GP_POLL 2)
 	case "$GP_POLL" in ''|*[!0-9]*) GP_POLL=2 ;; esac
 	[ "$GP_POLL" -lt 1 ] && GP_POLL=1
 
 	CPU_GAME_GOV=$(read_opt CPU_GAME_GOV performance)
-	CPU_IDLE_GOV=$(read_opt CPU_IDLE_GOV schedutil)
 	SCHED_BOOST=$(read_opt SCHED_BOOST true)
 	STUNE_BOOST=$(read_opt STUNE_BOOST 20)
 	SCHED_TUNE=$(read_opt SCHED_TUNE true)
@@ -188,9 +174,7 @@ load_config() {
 	SCHED_BOOST_ON_INPUT=$(read_opt SCHED_BOOST_ON_INPUT true)
 
 	GPU_GAME_FLOOR=$(read_opt GPU_GAME_PWRLEVEL 0)
-	GPU_IDLE_FLOOR=$(read_opt GPU_IDLE_PWRLEVEL 6)
 	GPU_GAME_GOV=$(read_opt GPU_GAME_GOV performance)
-	GPU_IDLE_GOV=$(read_opt GPU_IDLE_GOV msm-adreno-tz)
 	GPU_FORCE_CLK=$(read_opt GPU_FORCE_CLK 0)
 	GPU_IDLE_TIMER=$(read_opt GPU_IDLE_TIMER 80)
 	# kunci GPU ke frekuensi tertinggi (max_gpuclk) selama game (pin min=max)
@@ -246,10 +230,6 @@ load_config() {
 	INOT_INST=$(read_opt INOTIFY_MAX_USER_INSTANCES 512)
 	INOT_WATCH=$(read_opt INOTIFY_MAX_USER_WATCHES 524288)
 	INOT_QUEUE=$(read_opt INOTIFY_MAX_QUEUED_EVENTS 32768)
-
-	# mode statis (tanpa deteksi game) -> selalu profil game
-	STATIC_GAME=0
-	[ "$GP_DYN" != "true" ] && STATIC_GAME=1
 }
 load_config
 sanitize_governors
@@ -624,7 +604,7 @@ enforce_game() {
 }
 
 # ---------------- statis ----------------
-# Simpan nilai asli node statis agar Mode Default bisa kembali 100% stok.
+# Simpan nilai asli node statis agar kondisi standby bisa kembali 100% stok.
 save_node() {
 	local v
 	v=$(cat "$1" 2>/dev/null)
@@ -683,9 +663,11 @@ apply_static() {
 		wr /proc/sys/vm/swappiness "$VM_SWAPPINESS"
 		wr /proc/sys/vm/stat_interval "$VM_STAT_INTERVAL"
 		if [ -w /proc/sys/vm/min_free_kbytes ]; then
-			local cur
-			cur=$(cat /proc/sys/vm/min_free_kbytes 2>/dev/null)
-			[ -n "$cur" ] && echo $((cur + VM_MIN_FREE_EXTRA)) > /proc/sys/vm/min_free_kbytes 2>/dev/null
+			# Hitung dari nilai stok, bukan nilai saat ini, agar pemakaian
+			# berulang (reload / reinforce) tidak menumpuk min_free_kbytes.
+			local base
+			base=${ORIG_VM_MIN_FREE:-$(cat /proc/sys/vm/min_free_kbytes 2>/dev/null)}
+			[ -n "$base" ] && echo $((base + VM_MIN_FREE_EXTRA)) > /proc/sys/vm/min_free_kbytes 2>/dev/null
 		fi
 		log "vm: vfs=$VM_VFS swappiness=$VM_SWAPPINESS"
 	fi
@@ -711,6 +693,8 @@ apply_static() {
 
 # ---------------- profil ----------------
 apply_game() {
+	# Tuning statis (I/O/VM/NET/kernel) ikut aktif HANYA saat game berjalan.
+	apply_static
 	if [ "$EN_CPU" = "true" ]; then
 		cpu_gov "$CPU_GAME_GOV"
 		# PENTING: buka cap thermal (mi_thermald) SEBELUM mengunci frekuensi.
@@ -736,30 +720,10 @@ apply_game() {
 	touch_set game
 	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS ddr=$DDR_BOOST touch=$TOUCH_BOOST net=$NET_GAME_BOOST"
 }
-apply_idle() {
-	if [ "$EN_CPU" = "true" ]; then
-		cpu_gov "$CPU_IDLE_GOV"
-		[ "$CPU_LOCK_MAX" = "true" ] && cpu_lock idle
-		cpu_boost_set idle
-		wr /proc/sys/kernel/sched_boost 0
-		wr "$STUNE/schedtune.boost" 0
-	fi
-	sched_tune idle
-	msmperf_min idle
-	ddr_set idle
-	[ "$EN_GPU" = "true" ] && gpu_apply "$GPU_IDLE_FLOOR" "$GPU_IDLE_GOV" 0 "$ORIG_GPU_IDLE_TIMER"
-	[ "$EN_GPU" = "true" ] && gpu_unlock_min
-	net_game_set idle
-	thermal_set idle
-	touch_set idle
-	thermal_unlock_off
-	bypass_charge off
-	log "IDLE: cpu=$CPU_IDLE_GOV gpu_floor=$GPU_IDLE_FLOOR"
-}
-
-# ---------------- mode default (stok ROM) ----------------
-# Mode Default: tidak menerapkan tuning apa pun. Semua nilai dikembalikan ke
-# aslinya (CPU, GPU, thermal, touch, net, DDR, I/O, VM, kernel).
+# ---------------- kondisi standby (stok ROM) ----------------
+# Dipakai saat boot dan setiap kali game tidak berjalan. Semua nilai
+# dikembalikan persis ke stok: CPU, GPU, thermal, touch, net, DDR, I/O, VM,
+# dan kernel — termasuk tuning statis yang aktif saat game.
 apply_stock() {
 	cpu_gov orig
 	cpu_lock idle
@@ -779,11 +743,14 @@ apply_stock() {
 	thermal_unlock_off
 	bypass_charge off
 	restore_static
-	log "DEFAULT: stok ROM (tanpa tuning)"
+	log "STANDBY: stok ROM (tanpa tuning)"
 }
 
 # ---------------- inisialisasi ----------------
 capture_static
+# Nilai stok min_free_kbytes dipakai sebagai basis tambahan saat game, supaya
+# pemakaian berulang tidak menumpuk (lihat apply_static).
+ORIG_VM_MIN_FREE=$(sed -n 's@^static|/proc/sys/vm/min_free_kbytes|@@p' "$STATIC_LIST" | head -n1)
 build_ddr_list
 build_thermal_list
 ORIG_NET_NOTSOL=$(cat /proc/sys/net/ipv4/tcp_notsent_lowat 2>/dev/null)
@@ -795,15 +762,9 @@ ORIG_NET_BUSY_READ=$(cat /proc/sys/net/core/busy_read 2>/dev/null)
 log "ddr: $(wc -l < "$DDR_LIST" 2>/dev/null) node target"
 log "thermal: $(wc -l < "$TZ_LIST" 2>/dev/null) zone target"
 
-# baseline: default/global = stok ROM; gaming = idle
-if [ "$MODE" = "global" ]; then
-	apply_stock
-	state=global
-else
-	apply_static
-	apply_idle
-	state=idle
-fi
+# baseline: di luar game = stok ROM (belum ada tuning apa pun)
+apply_stock
+state=off
 
 # FAILSAFE: kalau sampai di sini + sistem tetap hidup 45 detik, anggap boot
 # sukses -> reset counter (sehingga tidak ke-disable setelah 3 boot normal).
@@ -818,25 +779,15 @@ while :; do
 		rm -f "$RELOAD"
 		load_config
 		sanitize_governors
-		if [ "$MODE" = "global" ]; then
-			apply_stock; state=global
+		if game_active; then
+			apply_game; state=game
 		else
-			apply_static
-			if game_active; then
-				apply_game; state=game
-			else
-				apply_idle; state=idle
-			fi
+			apply_stock; state=off
 		fi
-		log "reload: konfigurasi dibaca ulang (mode=$MODE)"
+		log "reload: konfigurasi dibaca ulang"
 	fi
 
-	if [ "$MODE" = "global" ]; then
-		if [ "$state" != "global" ]; then
-			apply_stock
-			state=global
-		fi
-	elif game_active; then
+	if game_active; then
 		if [ "$state" != "game" ]; then
 			apply_game
 			state=game
@@ -845,9 +796,9 @@ while :; do
 			enforce_game
 		fi
 	else
-		if [ "$state" != "idle" ]; then
-			apply_idle
-			state=idle
+		if [ "$state" != "off" ]; then
+			apply_stock
+			state=off
 		fi
 	fi
 	sleep "$GP_POLL"

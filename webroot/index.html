@@ -41,6 +41,7 @@
   button:active{transform:scale(.98)}
   /* mode tiles */
   .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modes.auto{grid-template-columns:1fr}
   .mode{position:relative;border:1px solid var(--line);background:var(--card2);border-radius:16px;padding:14px;cursor:pointer;transition:.18s;overflow:hidden}
   .mode .mi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0f1622;border:1px solid var(--line);margin-bottom:10px;transition:.18s}
   .mode .mi svg{width:22px;height:22px;color:var(--dim);transition:.18s}
@@ -201,7 +202,7 @@
       <h1>Cepheus <span>Tweaks</span></h1>
       <div class="sub"><span class="dot"></span> Xiaomi Mi 9 &bull; SM8150</div>
     </div>
-    <div class="badge" id="verBadge">v1.0.1</div>
+    <div class="badge" id="verBadge">v1.1.0</div>
   </div>
   <div class="pills">
     <span class="pill mode" id="pillMode">Gaming</span>
@@ -215,13 +216,8 @@
 <div class="card">
   <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg> <span data-i18n="modeTitle"></span></h2>
   <div class="hint" id="modeHint"></div>
-  <div class="modes">
-    <div class="mode" data-m="global" id="modeGlobal" onclick="pickMode('global')">
-      <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-6-3.7-9S9.5 5.6 12 3Z"/></svg></div>
-      <b>Default</b>
-      <small data-i18n="globalDesc"></small>
-    </div>
-    <div class="mode" data-m="gaming" id="modeGaming" onclick="pickMode('gaming')">
+  <div class="modes auto">
+    <div class="mode sel" data-m="gaming" id="modeGaming">
       <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="4.5"/><path d="M6.5 10.5v2M5.5 11.5h2M15.5 11h.01M18 13.2h.01"/></svg></div>
       <b>Gaming</b>
       <small data-i18n="gamingDesc"></small>
@@ -352,14 +348,9 @@ var IC = {
 var LANG = lsGet('cg_lang') || 'id';
 var T = {
   modeTitle:{id:'Mode',en:'Mode'},
-  modeHintGlobal:{id:'Mode Default mengembalikan semua pengaturan ke bawaan ROM. Tidak ada tuning yang diterapkan dan semua kontrol dinonaktifkan.',
-                  en:'Default mode restores every setting to the ROM stock values. No tweaks are applied and all controls are disabled.'},
-  modeHintGaming:{id:'Mode Gaming mengaktifkan seluruh fitur secara otomatis ketika aplikasi game berjalan di latar depan.',
-                  en:'Gaming mode enables every feature automatically whenever a game app is brought to the foreground.'},
-  globalDesc:{id:'Stok ROM, tanpa tuning apa pun',en:'Stock ROM, no tweaks applied'},
-  gamingDesc:{id:'Profil performa lengkap, aktif saat game',en:'Full performance profile while gaming'},
-  cpuHintGlobal:{id:'Tidak tersedia di Mode Default. Pilih Mode Gaming untuk mengatur batas frekuensi CPU.',
-                 en:'Not available in Default mode. Select Gaming mode to configure CPU frequency caps.'},
+  modeHintGaming:{id:'Semua optimasi aktif otomatis hanya saat game/benchmark berada di latar depan. Di luar game, seluruh pengaturan kembali ke stok ROM.',
+                  en:'Every tweak is applied automatically only while a game/benchmark is in the foreground. Outside games, all settings return to ROM stock.'},
+  gamingDesc:{id:'Game-only: aktif saat game, stok saat keluar',en:'Game-only: active while gaming, stock otherwise'},
   cpuHintGaming:{id:'Pilih batas frekuensi maksimum untuk masing-masing cluster CPU saat bermain game. Menurunkan batas sering kali justru meningkatkan performa jangka panjang, karena mekanisme thermal throttle aktif lebih lambat.',
                  en:'Choose the maximum frequency cap for each CPU cluster while gaming. Lowering the cap frequently improves sustained performance, as thermal throttling engages later.'},
   setTitle:{id:'Pengaturan',en:'Settings'},
@@ -368,18 +359,12 @@ var T = {
   langIdDesc:{id:'Teks antarmuka berbahasa Indonesia.',en:'Interface text in Indonesian.'},
   langEnDesc:{id:'Teks antarmuka berbahasa Inggris.',en:'Interface text in English.'},
   govTitle:{id:'Governor',en:'Governor'},
-  govHintGlobal:{id:'Tidak tersedia di Mode Default. Pilih Mode Gaming untuk mengatur governor CPU/GPU.',
-                 en:'Not available in Default mode. Select Gaming mode to configure CPU/GPU governors.'},
-  govHintGaming:{id:'Governor menentukan cara kernel menaikkan dan menurunkan frekuensi. Governor game dipakai selama game terdeteksi; governor idle dipakai di luar game.',
-                 en:'The governor controls how the kernel raises and lowers frequencies. The game governor is used while a game is detected; the idle governor is used outside games.'},
+  govHintGaming:{id:'Governor menentukan cara kernel menaikkan dan menurunkan frekuensi. Governor ini dipakai hanya saat game terdeteksi; di luar game governor asli ROM dipulihkan.',
+                 en:'The governor controls how the kernel raises and lowers frequencies. It is used only while a game is detected; outside games the original ROM governor is restored.'},
   govCpuGame:{id:'CPU • saat game',en:'CPU • gaming'},
   govCpuGameDesc:{id:'Dipakai selama game terdeteksi.',en:'Used while a game is detected.'},
-  govCpuIdle:{id:'CPU • saat idle',en:'CPU • idle'},
-  govCpuIdleDesc:{id:'Dipakai saat tidak ada game.',en:'Used when no game is running.'},
   govGpuGame:{id:'GPU • saat game',en:'GPU • gaming'},
   govGpuGameDesc:{id:'Dipakai saat profil game aktif.',en:'Used while the gaming profile is active.'},
-  govGpuIdle:{id:'GPU • saat idle',en:'GPU • idle'},
-  govGpuIdleDesc:{id:'Dipakai di luar game.',en:'Used outside games.'},
   govPerfDesc:{id:'Frekuensi maksimum terus — paling responsif, paling panas.',en:'Pinned to maximum frequency — most responsive, hottest.'},
   govSchedDesc:{id:'Adaptif berbasis scheduler — seimbang.',en:'Scheduler-driven adaptive — balanced.'},
   govPowerDesc:{id:'Frekuensi rendah — hemat daya.',en:'Low frequency — power saving.'},
@@ -451,32 +436,23 @@ function applyI18n(){
 function refreshTexts(){ applyI18n(); setModeUI(); renderCpu(); renderGov(); renderFeatures(); renderGames(); renderQuick(); renderApps(); renderLangs(); renderHero(); }
 
 /* ===================== state ===================== */
-var state = { games:[], apps:null, mode:'global', cpu:{}, gov:{}, govOpts:{cpu:[],gpu:[]}, features:{} };
+var state = { games:[], apps:null, cpu:{}, gov:{}, govOpts:{cpu:[],gpu:[]}, features:{} };
 
-/* ===================== mode (global / gaming) ===================== */
+/* ===================== mode (selalu game-only) ===================== */
 function setModeUI(){
-  var g = document.getElementById('modeGlobal'), m = document.getElementById('modeGaming');
-  if (g) g.classList.toggle('sel', state.mode==='global');
-  if (m) m.classList.toggle('sel', state.mode==='gaming');
+  // Tidak ada pemilih mode: semua kontrol selalu terlihat dan aktif saat game.
   ['gamecard','cpucards','cpuHint','govcard','boostcard'].forEach(function(id){
     var el = document.getElementById(id);
-    if (el) el.classList.toggle('hidden', state.mode!=='gaming');
+    if (el) el.classList.remove('hidden');
   });
   var mh = document.getElementById('modeHint');
-  if (mh) mh.textContent = state.mode==='global' ? t('modeHintGlobal') : t('modeHintGaming');
+  if (mh) mh.textContent = t('modeHintGaming');
   var ch = document.getElementById('cpuHint');
-  if (ch) ch.textContent = state.mode==='global' ? t('cpuHintGlobal') : t('cpuHintGaming');
+  if (ch) ch.textContent = t('cpuHintGaming');
   var gh = document.getElementById('govHint');
-  if (gh) gh.textContent = state.mode==='global' ? t('govHintGlobal') : t('govHintGaming');
-  document.body.dataset.mode = state.mode;
+  if (gh) gh.textContent = t('govHintGaming');
+  document.body.dataset.mode = 'gaming';
   renderHero();
-}
-function pickMode(m){
-  if (m!=='global' && m!=='gaming') return;
-  if (state.mode===m){ setModeUI(); return; }
-  state.mode = m; setModeUI();
-  var pairs = {}; pairs.MODE = m;
-  confSetMany(pairs).then(function(){ return reloadWorker(); });
 }
 
 /* ===================== pengaturan: bahasa ===================== */
@@ -662,9 +638,7 @@ function renderGov(){
   var host = document.getElementById('govlist'); if (!host) return;
   var secs = [
     {key:'CPU_GAME_GOV', title:t('govCpuGame'), desc:t('govCpuGameDesc'), opts:state.govOpts.cpu},
-    {key:'CPU_IDLE_GOV', title:t('govCpuIdle'), desc:t('govCpuIdleDesc'), opts:state.govOpts.cpu},
-    {key:'GPU_GAME_GOV', title:t('govGpuGame'), desc:t('govGpuGameDesc'), opts:state.govOpts.gpu},
-    {key:'GPU_IDLE_GOV', title:t('govGpuIdle'), desc:t('govGpuIdleDesc'), opts:state.govOpts.gpu}
+    {key:'GPU_GAME_GOV', title:t('govGpuGame'), desc:t('govGpuGameDesc'), opts:state.govOpts.gpu}
   ];
   host.innerHTML = secs.map(function(sec){
     var sel = state.gov[sec.key] || '';
@@ -729,7 +703,7 @@ function fmtCap(v){
 }
 function renderHero(){
   var pm = document.getElementById('pillMode');
-  if (pm) pm.textContent = state.mode==='global' ? 'Default Mode' : 'Gaming Mode';
+  if (pm) pm.textContent = 'Gaming Mode';
   var pc = document.getElementById('pillCpu');
   if (pc){
     var caps = [state.cpu.LITTLE_MAX, state.cpu.MID_MAX, state.cpu.PRIME_MAX];
@@ -838,16 +812,12 @@ function pick(p){ addPkg(p); toast((LANG==='id'?'Ditambah: ':'Added: ')+p); clos
 async function loadAll(){
   var txt = "";
   try{ txt = (await readLines(fileConf())).join('\n'); }catch(e){}
-  state.mode = confGet(txt, "MODE", "global");
-  if (state.mode !== "global" && state.mode !== "gaming") state.mode = "global";
   state.cpu = {};
   await loadFreqs();
   CPU_CLUSTERS.forEach(function(c){ state.cpu[c.key] = confGet(txt, c.key, c.dflt); });
   state.gov = {};
-  ['CPU_GAME_GOV','CPU_IDLE_GOV','GPU_GAME_GOV','GPU_IDLE_GOV'].forEach(function(k){
-    var d = (k.indexOf('GPU')===0) ? 'performance' : (k.indexOf('IDLE')>=0 ? 'schedutil' : 'performance');
-    if (k==='GPU_IDLE_GOV') d='msm-adreno-tz';
-    state.gov[k] = confGet(txt, k, d);
+  ['CPU_GAME_GOV','GPU_GAME_GOV'].forEach(function(k){
+    state.gov[k] = confGet(txt, k, 'performance');
   });
   await loadGov();
   state.features = {};
