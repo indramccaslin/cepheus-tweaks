@@ -17,6 +17,7 @@ It ships with a **WebUI** (KernelSU-Next Manager) dashboard to manage the game l
 - **Thermal unlock** — stops `mi_thermald` and opens `thermal_message/cpu_limits` + the GPU cooling clamp during games; restored to stock when the game exits. Kernel emergency protection (BCL, `*-step` zones, LMH) stays active.
 - **Static tuning is game-only too** — I/O scheduler/readahead, VM, base TCP and kernel/inotify values are applied on game start and restored from a boot-time snapshot on exit.
 - **Bypass charging** — while gaming the phone runs off the adapter (battery `current_now ≈ 0`, cooler).
+- **Auto DND** — Do Not Disturb turns on while gaming (priority / alarms-only / total silence) and your previous DND mode is restored on exit.
 - **Scheduler / input boost / schedtune** tuning for steadier frame pacing.
 - **Boot-safe** — runs from `service.sh` with a boot-count failsafe (auto-disables after repeated failed boots).
 
@@ -42,12 +43,13 @@ The interface uses a three-tab bottom navigation (Encore-style):
 
 - **Beranda / Home** — status + game optimization toggles.
 - **Game / Games** — add/remove game packages.
-- **Pengaturan / Settings** — CPU frequency caps, governors, language.
+- **Pengaturan / Settings** — CPU frequency caps, governors, Auto DND level, language.
 
 - **Status** — automatically Gaming while a game is in the foreground, stock ROM otherwise. No mode selector.
 - **CPU frequency** — pick the maximum frequency for Little / Mid / Prime.
 - **Governor** — pick CPU/GPU governors used during games.
-- **Optimasi Game** — toggle Touch Response, Network Boost, DDR Boost, GPU Max Lock, Thermal Unlock and Bypass Charging.
+- **Optimasi Game** — toggle Touch Response, Network Boost, DDR Boost, GPU Max Lock, Thermal Unlock, Bypass Charging and Auto DND.
+- **Level Auto DND** — choose Priority only (default), Alarms only or Total silence.
 - **Daftar Game** — add/remove packages. Type the package name manually or tap
   **Pilih dari daftar aplikasi** to pick from the installed apps.
 
@@ -62,6 +64,8 @@ Everything lives in `/data/adb/modules/cepheus-tweaks/tweak.conf` (also editable
 |---|---|---|
 | `GP_CPU` / `GP_GPU` / `GP_IO` / `GP_VM` / `GP_NET` / `GP_KERNEL` | `true` | Master switches per subsystem (all applied only during games) |
 | `GP_POLL` | `2` | Game-detection interval (seconds) |
+| `GP_DND` | `true` | Auto DND while gaming; previous mode restored on exit |
+| `DND_MODE` | `priority` | DND level during games: `priority` / `alarms` / `on` (total silence) |
 | `CPU_GAME_GOV` | `performance` | CPU governor during games |
 | `CPU_LOCK_MAX` | `true` | Pin `scaling_min = scaling_max = max` during games |
 | `GPU_GAME_PWRLEVEL` | `0` | GPU power level during games (`0` = max clock) |

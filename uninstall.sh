@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (uninstall.sh) v1.1.1
+# Cepheus Tweaks (uninstall.sh) v1.2.0
 #
 # Kembalikan semua yang diubah modul ke nilai wajar/stok:
 #   - CPU governor -> schedutil, batas frekuensi -> stok
@@ -9,6 +9,7 @@
 #   - DDR/LLCC/gpubw -> nilai asli yang disimpan saat boot
 #   - touch filter & network latency -> normal
 #   - hidupkan mi_thermald & thermal-engine
+#   - DND dikembalikan ke mode milik user sebelum modul dipasang
 ########################################
 
 MODDIR=$(dirname "$0")
@@ -65,6 +66,19 @@ echo 1 > /proc/sys/net/ipv4/tcp_slow_start_after_idle 2>/dev/null
 echo 0 > /proc/sys/net/ipv4/tcp_no_metrics_save 2>/dev/null
 echo 0 > /proc/sys/net/core/busy_poll 2>/dev/null
 echo 0 > /proc/sys/net/core/busy_read 2>/dev/null
+
+# pulihkan DND ke mode milik user (jika modul dicopot saat game masih aktif)
+if [ -r "$MODDIR/.dnd_orig" ]; then
+	z=$(cat "$MODDIR/.dnd_orig" 2>/dev/null)
+	case "$z" in
+		0) a=off ;;
+		1) a=priority ;;
+		2) a=on ;;
+		3) a=alarms ;;
+		*) a=off ;;
+	esac
+	cmd notification set_dnd "$a" >/dev/null 2>&1
+fi
 
 start mi_thermald 2>/dev/null
 start vendor.thermal-engine 2>/dev/null

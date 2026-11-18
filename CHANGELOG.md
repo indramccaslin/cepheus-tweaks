@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.0 (versionCode 10004)
+- **Auto DND saat game** — notifikasi otomatis dibungkam begitu game berjalan, lalu mode DND milik user dipulihkan persis saat keluar game.
+- **Kontrol DND** — `GP_DND` untuk mengaktifkan/menonaktifkan fitur dan `DND_MODE` (`priority` / `alarms` / `on`) untuk memilih level. Keduanya tersedia di WebUI: toggle di **Beranda**, pemilih level di **Pengaturan**.
+- **Pulihkan saat uninstall** — DND ikut dikembalikan ke mode semula bila modul dicopot saat game masih aktif.
+
 ## v1.1.1 (versionCode 10003)
 - **WebUI 3 tab** — navigasi bawah model Encore: **Beranda** (status + optimasi game), **Game** (daftar paket), **Pengaturan** (frekuensi CPU, governor, bahasa). Tab terakhir tersimpan di localStorage.
 - **Tata letak lebih rapi** — kartu dibagi per halaman, scroll lebih pendek, dan body memberi ruang untuk navigation bar bawah.

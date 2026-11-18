@@ -1,6 +1,6 @@
 #!/system/bin/sh
 ########################################
-# Cepheus Tweaks (service.sh) v1.1.1
+# Cepheus Tweaks (service.sh) v1.2.0
 # Berdiri sendiri untuk KernelSU-Next (tanpa daemon tambahan).
 #
 # Saat game terdeteksi (app foreground ada di gamelist.txt):
@@ -15,6 +15,7 @@
 # berperilaku "game-only" — stok di luar game, performa penuh saat game.
 #
 # Statis (hanya saat game): I/O scheduler/readahead, VM, NET, kernel.
+# DND: aktif otomatis saat game, mode sebelumnya dipulihkan saat keluar.
 # WebUI (webroot/) bisa mengubah gamelist.txt & tweak.conf lalu men-*touch*
 # $MODDIR/.reload -> worker membaca ulang tanpa reboot.
 #
@@ -68,7 +69,7 @@ if [ "$1" != "--worker" ]; then
 		exit 0
 	fi
 	: > "$LOG"
-	log "invoked (v1.1.1) boot#$c"
+	log "invoked (v1.2.0) boot#$c"
 	setsid "$0" --worker </dev/null >>"$LOG" 2>&1 &
 	echo $! > "$PIDFILE"
 	log "worker detached (pid $!)"
@@ -79,7 +80,7 @@ fi
 while [ -z "$(getprop sys.boot_completed)" ]; do sleep 10; done
 sleep 15
 
-	log "started (v1.1.1)"
+	log "started (v1.2.0)"
 
 # ---------------- paths ----------------
 G=/sys/class/kgsl/kgsl-3d0
@@ -90,6 +91,7 @@ GAMELIST="$MODDIR/gamelist.txt"
 TZ_LIST="$MODDIR/.thermal_list"
 DDR_LIST="$MODDIR/.ddr_orig"
 STATIC_LIST="$MODDIR/.static_orig"
+DND_ORIG="$MODDIR/.dnd_orig"
 FTS=/sys/devices/platform/soc/c80000.i2c/i2c-2/2-0049
 MSMPERF=/sys/module/msm_performance/parameters
 
@@ -137,6 +139,48 @@ game_active() {
 	fg=$(fg_pkg)
 	in_gamelist "$fg" && return 0
 	return 1
+}
+
+# ---------------- DND otomatis ----------------
+# zen_mode: 0 = off, 1 = priority, 2 = none/senyap total, 3 = alarms.
+# `cmd notification set_dnd` yang dipakai supaya NotificationManagerService
+# ikut memperbarui filter notifikasi (bukan sekadar menulis settings global).
+dnd_arg() {
+	case "$1" in
+		0) echo off ;;
+		1) echo priority ;;
+		2) echo on ;;
+		3) echo alarms ;;
+		*) echo off ;;
+	esac
+}
+
+# Catat zen_mode "stok" (milik user). Dipanggil saat standby, jadi nilai yang
+# tersimpan selalu mode DND yang dipakai user sebelum game terakhir.
+refresh_dnd_orig() {
+	local z
+	z=$(settings get global zen_mode 2>/dev/null)
+	case "$z" in ''|*[!0-9]*) z=0 ;; esac
+	[ "$(cat "$DND_ORIG" 2>/dev/null)" = "$z" ] || echo "$z" > "$DND_ORIG" 2>/dev/null
+}
+
+# Kembalikan DND ke mode milik user (dipakai saat keluar game / fitur mati).
+dnd_stock() {
+	local z
+	z=$(cat "$DND_ORIG" 2>/dev/null)
+	case "$z" in ''|*[!0-9]*) z=0 ;; esac
+	cmd notification set_dnd "$(dnd_arg "$z")" >/dev/null 2>&1
+	log "DND: pulihkan (zen=$z)"
+}
+
+# Aktifkan DND saat game. Kalau fitur dimatikan, pastikan DND ikut pulih.
+dnd_game() {
+	if [ "$EN_DND" = "true" ]; then
+		cmd notification set_dnd "$DND_MODE" >/dev/null 2>&1
+		log "DND: aktif ($DND_MODE)"
+	else
+		dnd_stock
+	fi
 }
 
 # ---------------- config ----------------
@@ -230,6 +274,11 @@ load_config() {
 	INOT_INST=$(read_opt INOTIFY_MAX_USER_INSTANCES 512)
 	INOT_WATCH=$(read_opt INOTIFY_MAX_USER_WATCHES 524288)
 	INOT_QUEUE=$(read_opt INOTIFY_MAX_QUEUED_EVENTS 32768)
+
+	# DND otomatis saat game
+	EN_DND=$(read_opt GP_DND true)
+	DND_MODE=$(read_opt DND_MODE priority)
+	case "$DND_MODE" in priority|alarms|on) ;; *) DND_MODE=priority ;; esac
 }
 load_config
 sanitize_governors
@@ -718,7 +767,8 @@ apply_game() {
 	net_game_set game
 	thermal_set game
 	touch_set game
-	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS ddr=$DDR_BOOST touch=$TOUCH_BOOST net=$NET_GAME_BOOST"
+	dnd_game
+	log "GAME: cpu=$CPU_GAME_GOV lock=$CPU_LOCK_MAX cap=$LITTLE_MAX/$MID_MAX/$PRIME_MAX gpu_floor=$GPU_GAME_FLOOR unlock=$THERMAL_UNLOCK bypass=$EN_BYPASS ddr=$DDR_BOOST touch=$TOUCH_BOOST net=$NET_GAME_BOOST dnd=$EN_DND/$DND_MODE"
 }
 # ---------------- kondisi standby (stok ROM) ----------------
 # Dipakai saat boot dan setiap kali game tidak berjalan. Semua nilai
@@ -743,6 +793,7 @@ apply_stock() {
 	thermal_unlock_off
 	bypass_charge off
 	restore_static
+	dnd_stock
 	log "STANDBY: stok ROM (tanpa tuning)"
 }
 
@@ -763,6 +814,8 @@ log "ddr: $(wc -l < "$DDR_LIST" 2>/dev/null) node target"
 log "thermal: $(wc -l < "$TZ_LIST" 2>/dev/null) zone target"
 
 # baseline: di luar game = stok ROM (belum ada tuning apa pun)
+# Catat DND milik user SEBELUM apply_stock memulihkannya.
+refresh_dnd_orig
 apply_stock
 state=off
 
@@ -800,6 +853,8 @@ while :; do
 			apply_stock
 			state=off
 		fi
+		# standby: selalu simpan DND terkini milik user sebagai baseline
+		refresh_dnd_orig
 	fi
 	sleep "$GP_POLL"
 done
